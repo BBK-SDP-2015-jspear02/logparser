@@ -9,12 +9,11 @@ import java.sql.SQLException;
 import java.util.*;
 
 public class LogLine {
-    String logline;
-    Map<String,Object> outputs;
-    List<String> lineItems;
+    private String logline;
+    private Map<String,Object> outputs;
+    private List<String> lineItems;
     private ResultSet splitters;
-    private String ipaddress,date,time,url,qs,client,path,directories,dir1,dir2,viewId,referrer,fileType, userAgent,browser,os, type,view,request;
-    private int ipnumber, status, cpcode;
+    private int cpcode;
     private double throughput;
     public LogLine(String logline, String breaker, int cpcode, ResultSet splitters){
         //Add one item to the log line
@@ -27,6 +26,9 @@ public class LogLine {
         splitLine(breaker);
         //Now process this line
         processLine();
+    }
+    public Map<String,Object> getOutputs(){
+        return this.outputs;
     }
     private void splitLine(String breaker) {
         lineItems = Arrays.asList(logline.split(breaker));
@@ -82,6 +84,9 @@ public class LogLine {
                 Object value = entry.getValue();
                 System.out.println(key2 + " : " + value);
             }
+
+            //Now input into database
+
         }
     }
 
@@ -90,7 +95,7 @@ public class LogLine {
         ReadableUserAgent agent = parser.parse((String) outputs.get("user_agent"));
         outputs.put("browser", agent.getName());
         outputs.put("device",agent.getDeviceCategory().getName());
-        outputs.put("os", agent.getOperatingSystem().getName());
+        outputs.put("operating_system", agent.getOperatingSystem().getName());
     }
 
     private void ipSplit() {
@@ -122,24 +127,45 @@ public class LogLine {
                     System.out.println(splitters.getString("split"));
                     urlNoBase = outputs.get("url").toString().replace(splitters.getString("split"),"");
                     client = splitters.getString("client");
-                    splitters.first();
+
                     break;
                 }
             }
+            //Move back to the front of the recordset
+            splitters.beforeFirst();
 
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
 
+        outputs.put("path",urlNoBase);
+
         //Create the directory array
         String[] dirArr = urlNoBase.split("/");
+
         if (client.equals("STANDARD")) {
             outputs.put("client",dirArr[0]);
-            outputs.put("dir1", (dirArr.length > 2) ? dirArr[1] : "");
-            outputs.put("dir2", (dirArr.length > 3) ? dirArr[2] : "");
+        } else {
+            outputs.put("client",client);
         }
 
+        outputs.put("dir1", (dirArr.length > 2) ? dirArr[1] : "");
+        outputs.put("dir2", (dirArr.length > 3) ? dirArr[2] : "");
 
+        outputs.put("file_ref",dirArr[dirArr.length-1]);
+        outputs.put("directories", buildString(dirArr,"/"));
 
+        String[] fileArr = outputs.get("file_ref").toString().split("\\.");
+        outputs.put("file_type", fileArr[fileArr.length-1]);
+        outputs.put("file_name",buildString(fileArr,"\\."));
+        
+    }
+    //A method for rebuilding a string after it has been broken apart into an array - similar to implode in php
+    private String buildString(String[] strArr, String join) {
+        String joinedOutput = "";
+        for (int i = 0; i < strArr.length; i++) {
+            joinedOutput += (i == (strArr.length - 1)) ? "" : strArr[i] + ((i == strArr.length - 2) ? "" : join);
+        }
+        return joinedOutput;
     }
 }

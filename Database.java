@@ -28,4 +28,15 @@ public class Database {
          }
 
     }
+
+    public void insert(String sql) {
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            //throw new IllegalStateException("Cannot execute query!" + e.getMessage(), e);
+        }
+
+    }
 }
