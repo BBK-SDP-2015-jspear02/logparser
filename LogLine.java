@@ -1,41 +1,39 @@
 package code;
 
-import net.sf.uadetector.ReadableUserAgent;
-import net.sf.uadetector.UserAgentStringParser;
-import net.sf.uadetector.service.UADetectorServiceFactory;
+import nl.bitwalker.useragentutils.UserAgent;
+import org.apache.commons.lang.StringEscapeUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
 public class LogLine {
-    private String logline;
-    private Map<String,Object> outputs;
-    private List<String> lineItems;
-    private ResultSet splitters;
-    private int cpcode;
-    private double throughput;
+    protected String logline;
+    protected Map<String,String> outputs;
+    protected List<String> lineItems;
+    protected ResultSet splitters;
+    protected int cpcode;
     public LogLine(String logline, String breaker, int cpcode, ResultSet splitters){
         //Add one item to the log line
         Log.addLine();
         this.logline = logline;
         this.cpcode = cpcode;
         this.splitters = splitters;
-        outputs = new HashMap<String,Object>();
+        outputs = new HashMap<String,String>();
         //Split the line by the breaker that has been passed in
         splitLine(breaker);
         //Now process this line
         processLine();
     }
-    public Map<String,Object> getOutputs(){
+    public Map<String,String> getOutputs(){
         return this.outputs;
     }
     private void splitLine(String breaker) {
         lineItems = Arrays.asList(logline.split(breaker));
 
     }
+
     private void processLine(){
-        if (Log.getLine() > 2) {
             for (int i = 0; i < lineItems.size(); i++) {
                 String key;
                 switch (i) {
@@ -75,11 +73,18 @@ public class LogLine {
                 }
 
             }
+
             //All information gathered. Now calculate extra fields.
+            //First calculate the throughput from the scbytes
+            Double tput = Double.parseDouble(outputs.get("scbytes")) / 1048576;
+            outputs.put("throughput",Double.toString(tput));
+            outputs.put("segment_count","1");
+
             urlSplit();
             uaSplit();
             ipSplit();
-            for (Map.Entry<String, Object> entry : outputs.entrySet()) {
+
+            for (Map.Entry<String, String> entry : outputs.entrySet()) {
                 String key2 = entry.getKey();
                 Object value = entry.getValue();
                 System.out.println(key2 + " : " + value);
@@ -87,20 +92,21 @@ public class LogLine {
 
             //Now input into database
 
-        }
+
     }
 
     private void uaSplit() {
-        UserAgentStringParser parser = UADetectorServiceFactory.getResourceModuleParser();
-        ReadableUserAgent agent = parser.parse((String) outputs.get("user_agent"));
-        outputs.put("browser", agent.getName());
-        outputs.put("device",agent.getDeviceCategory().getName());
-        outputs.put("operating_system", agent.getOperatingSystem().getName());
+       // UserAgentStringParser parser = UADetectorServiceFactory.getResourceModuleParser();
+        UserAgent agent = UserAgent.parseUserAgentString((String) outputs.get("user_agent"));
+        outputs.put("browser", agent.getBrowser().getName());
+        outputs.put("device",agent.getOperatingSystem().getDeviceType().getName());
+        outputs.put("operating_system", agent.getOperatingSystem().getName());//**/
+
     }
 
     private void ipSplit() {
         IP ip = new IP((String) outputs.get("ip_address"));
-        outputs.put("ip_number",ip.getIpNumber());
+        outputs.put("ip_number",Long.toString(ip.getIpNumber()));
         outputs.put("country", ip.get("country"));
         outputs.put("region", ip.get("region"));
         outputs.put("city", ip.get("city"));
@@ -108,9 +114,9 @@ public class LogLine {
 
     private void urlSplit(){
         //First clean up the url of any unusual characters
-
+        String urlNoHtml = StringEscapeUtils.unescapeHtml(outputs.get("full_url"));
         //Then break the url up into querystring and stem
-        String[] urlArr = outputs.get("full_url").toString().split("\\?");
+        String[] urlArr = urlNoHtml.split("\\?");
 
         outputs.put("url", urlArr[0]);
         outputs.put("querystring",(urlArr.length > 1) ? urlArr[1] : "");
@@ -155,8 +161,8 @@ public class LogLine {
         outputs.put("file_ref",dirArr[dirArr.length-1]);
         outputs.put("directories", buildString(dirArr,"/"));
 
-        String[] fileArr = outputs.get("file_ref").toString().split("\\.");
-        outputs.put("file_type", fileArr[fileArr.length-1]);
+        String[] fileArr = outputs.get("file_ref").split("\\.");
+        outputs.put("file_type", (fileArr.length > 0) ? fileArr[fileArr.length-1] : "UNKNOWN");
         outputs.put("file_name",buildString(fileArr,"\\."));
         
     }
@@ -167,5 +173,13 @@ public class LogLine {
             joinedOutput += (i == (strArr.length - 1)) ? "" : strArr[i] + ((i == strArr.length - 2) ? "" : join);
         }
         return joinedOutput;
+    }
+
+    public void addSegment(LogLine line) {
+        // adding segment information to the logline
+        outputs.put("throughput", Double.toString(Double.parseDouble(outputs.get("throughput")) + Double.parseDouble(line.getOutputs().get("throughput"))));
+        outputs.put("scbytes", Integer.toString(Integer.parseInt(outputs.get("scbytes")) + Integer.parseInt(line.getOutputs().get("scbytes"))));
+        outputs.put("duration", Integer.toString(Integer.parseInt(outputs.get("duration")) + Integer.parseInt(line.getOutputs().get("duration"))));
+        outputs.put("segment_count", Integer.toString(Integer.parseInt(outputs.get("segment_count")) + 1));
     }
 }

@@ -6,6 +6,6 @@ public class ErrorLog {
         this.db = db;
     }
     public void writeError(String logfile, int line,String message) {
-        //Write the error
+        System.out.println();
     }
 }
