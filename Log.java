@@ -13,11 +13,13 @@ public abstract class  Log {
     protected ResultSet logSplitters;
     //Each log has a unique name, cpcode, domain and logtype
     protected int cpcode;
+    protected ResultSet liveFix;
     protected String logName, domain, cdn, deliveryType, client, breaker;
     protected List<LogLine> logLines;
     protected static int lineCount = 0;
-    public Log(String logname,ResultSet logDetails, ResultSet logSplitters) throws SQLException,IOException{
+    public Log(String logname,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix) throws SQLException,IOException{
         this.logName = logname;
+        this.liveFix = liveFix;
         this.logSplitters = logSplitters;
         this.cpcode = logDetails.getInt("cpcode");
         this.domain = logDetails.getString("domain");

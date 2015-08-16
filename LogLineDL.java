@@ -4,15 +4,12 @@ import org.apache.commons.lang.StringEscapeUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 
-/**
- * Created by John on 15/08/2015.
- */
-public class LogLineHDN extends LogLine{
-    public LogLineHDN(String logline, String breaker, int cpcode, ResultSet splitters){
+public class LogLineDL extends LogLine{
+    public LogLineDL(String logline, String breaker, int cpcode, ResultSet splitters){
         //Add one item to the log line
         super(logline,breaker,cpcode,splitters);
+        //Now process this line
         processLine();
     }
 
@@ -63,7 +60,7 @@ public class LogLineHDN extends LogLine{
         outputs.put("dir2", (dirArr.length > 3) ? dirArr[2] : "");
 
         outputs.put("file_ref",dirArr[dirArr.length-1]);
-       // outputs.put("directories", buildString(dirArr,"/"));
+        // outputs.put("directories", buildString(dirArr,"/"));
 
         String[] fileArr = outputs.get("file_ref").split("\\.");
         outputs.put("file_type", (fileArr.length > 0) ? fileArr[fileArr.length-1] : "UNKNOWN");

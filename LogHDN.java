@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class LogHDN extends Log{
-    public LogHDN(String logname, ResultSet logDetails, ResultSet logSplitters) throws SQLException,IOException{
-        super(logname,logDetails, logSplitters);
+    public LogHDN(String logname, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix) throws SQLException,IOException{
+        super(logname,logDetails, logSplitters,liveFix);
     }
     protected void readLog() throws IOException{
         lineCount = 0;

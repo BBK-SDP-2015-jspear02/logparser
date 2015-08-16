@@ -5,7 +5,7 @@ import java.sql.SQLException;
 
 //Generates log objects. Different log items generate different type of log items.
 public class LogFactory {
-    public static Log makeLog(String location,String logname, ResultSet rsLogTypes, ResultSet rsLogSplitters) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException,SQLException {
+    public static Log makeLog(String location,String logname, ResultSet rsLogTypes, ResultSet rsLogSplitters, ResultSet fixLive) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException,SQLException {
         //Split the logname into an array and get the first item (which is the cpcode of the log)
         int cpcode = Integer.parseInt(logname.split("_")[0]);
         System.out.println(cpcode);
@@ -23,7 +23,7 @@ public class LogFactory {
             throw new IllegalArgumentException("This cpcode is not recorded in the log_types database.");
         } else {
             System.out.println("making log");
-            return (Log) Class.forName("code." + rsLogTypes.getString("log_type")).getConstructor(String.class,ResultSet.class, ResultSet.class).newInstance(location + logname, rsLogTypes,rsLogSplitters);
+            return (Log) Class.forName("code." + rsLogTypes.getString("log_type")).getConstructor(String.class,ResultSet.class, ResultSet.class, ResultSet.class).newInstance(location + logname, rsLogTypes,rsLogSplitters,fixLive);
         }
 
     }

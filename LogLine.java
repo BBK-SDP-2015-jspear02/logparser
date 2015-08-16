@@ -22,8 +22,7 @@ public class LogLine {
         outputs = new HashMap<String,String>();
         //Split the line by the breaker that has been passed in
         splitLine(breaker);
-        //Now process this line
-        processLine();
+
     }
     public Map<String,String> getOutputs(){
         return this.outputs;
@@ -33,7 +32,7 @@ public class LogLine {
 
     }
 
-    private void processLine(){
+    protected void processLine(){
             for (int i = 0; i < lineItems.size(); i++) {
                 String key;
                 switch (i) {
@@ -90,9 +89,6 @@ public class LogLine {
                 System.out.println(key2 + " : " + value);
             }
 
-            //Now input into database
-
-
     }
 
     private void uaSplit() {
@@ -112,7 +108,7 @@ public class LogLine {
         outputs.put("city", ip.get("city"));
     }
 
-    private void urlSplit(){
+    protected void urlSplit(){
         //First clean up the url of any unusual characters
         String urlNoHtml = StringEscapeUtils.unescapeHtml(outputs.get("full_url"));
         //Then break the url up into querystring and stem
@@ -166,6 +162,7 @@ public class LogLine {
         outputs.put("file_name",buildString(fileArr,"\\."));
         
     }
+
     //A method for rebuilding a string after it has been broken apart into an array - similar to implode in php
     private String buildString(String[] strArr, String join) {
         String joinedOutput = "";

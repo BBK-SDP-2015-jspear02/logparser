@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 
 public class LogDL extends Log{
-    public LogDL(String logname, ResultSet logDetails, ResultSet logSplitters) throws SQLException,IOException {
-        super(logname,logDetails, logSplitters);
+    public LogDL(String logname, ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix) throws SQLException,IOException {
+        super(logname,logDetails, logSplitters, liveFix);
     }
 
     protected void readLog() throws IOException{

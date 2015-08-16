@@ -15,13 +15,15 @@ public class RunIt {
         ResultSet rsLogTypes = RunIt.db.select("SELECT * FROM log_types;");
         //Get the list of log url splitters from the database - order them by CPCODE and then length of the url
         ResultSet rsSplitters = RunIt.db.select("SELECT * FROM log_splitters ORDER BY cpcode, LENGTH(split) DESC;");
+        //Get the list of log url splitters from the database - order them by CPCODE and then length of the url
+        ResultSet rsLive = RunIt.db.select("SELECT * FROM live_fix;");
         File f = new File(fileLocation);
         ArrayList<File> logs = new ArrayList<File>(Arrays.asList(f.listFiles()));
             logs.stream().forEach(
 
                     item -> {
                         try {
-                            LogFactory.makeLog(fileLocation, item.getName(), rsLogTypes, rsSplitters);
+                            LogFactory.makeLog(fileLocation, item.getName(), rsLogTypes, rsSplitters, rsLive);
                         } catch (ClassNotFoundException e) {
                             System.out.println("cnf" + e.getMessage());
                         } catch (IllegalAccessException e) {
