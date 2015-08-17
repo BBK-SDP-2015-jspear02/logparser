@@ -13,7 +13,7 @@ public class LogLine {
     protected List<String> lineItems;
     protected ResultSet splitters;
     protected int cpcode;
-    public LogLine(String logline, String breaker, int cpcode, ResultSet splitters){
+    public LogLine(String logline, String breaker, int cpcode, ResultSet splitters, ResultSet liveFix){
         //Add one item to the log line
         Log.addLine();
         this.logline = logline;
@@ -109,6 +109,25 @@ public class LogLine {
     }
 
     protected void urlSplit(){
+        String[] basicInfo = urlSplitBasic();
+
+        outputs.put("path",basicInfo[0]);
+
+        //Create the directory array
+        String[] dirArr = basicInfo[0].split("/");
+
+
+        outputs.put("dir1", (dirArr.length > 2) ? dirArr[1] : "");
+        outputs.put("dir2", (dirArr.length > 3) ? dirArr[2] : "");
+
+        outputs.put("file_ref",dirArr[dirArr.length-1]);
+        outputs.put("directories", buildString(dirArr,"/"));
+
+        fileSplit();
+
+    }
+
+    protected String[] urlSplitBasic() {
         //First clean up the url of any unusual characters
         String urlNoHtml = StringEscapeUtils.unescapeHtml(outputs.get("full_url"));
         //Then break the url up into querystring and stem
@@ -119,52 +138,37 @@ public class LogLine {
 
 
         //Now get the url splitters which are relevant to this cpcode
-        String urlNoBase = "";
-        String client = "";
+        String[] rtnArray = new String[2];
+
         try {
             while (splitters.next()) {
                 System.out.println(splitters.getString("split"));
                 if(outputs.get("url").toString().indexOf(splitters.getString("split")) != -1) {
                     //Remove the base url
                     System.out.println(splitters.getString("split"));
-                    urlNoBase = outputs.get("url").toString().replace(splitters.getString("split"),"");
-                    client = splitters.getString("client");
-
+                    rtnArray[0] = outputs.get("url").toString().replace(splitters.getString("split"),"");
+                    rtnArray[1] = splitters.getString("client");
                     break;
                 }
             }
             //Move back to the front of the recordset
             splitters.beforeFirst();
-
         } catch (SQLException ex) {
             System.out.println(ex.getMessage());
+            rtnArray[0] = "";
+            rtnArray[1] = "";
         }
+        return rtnArray;
+    }
 
-        outputs.put("path",urlNoBase);
-
-        //Create the directory array
-        String[] dirArr = urlNoBase.split("/");
-
-        if (client.equals("STANDARD")) {
-            outputs.put("client",dirArr[0]);
-        } else {
-            outputs.put("client",client);
-        }
-
-        outputs.put("dir1", (dirArr.length > 2) ? dirArr[1] : "");
-        outputs.put("dir2", (dirArr.length > 3) ? dirArr[2] : "");
-
-        outputs.put("file_ref",dirArr[dirArr.length-1]);
-        outputs.put("directories", buildString(dirArr,"/"));
-
+    protected void fileSplit() {
         String[] fileArr = outputs.get("file_ref").split("\\.");
         outputs.put("file_type", (fileArr.length > 0) ? fileArr[fileArr.length-1] : "UNKNOWN");
         outputs.put("file_name",buildString(fileArr,"\\."));
-        
     }
 
     //A method for rebuilding a string after it has been broken apart into an array - similar to implode in php
-    private String buildString(String[] strArr, String join) {
+    protected String buildString(String[] strArr, String join) {
         String joinedOutput = "";
         for (int i = 0; i < strArr.length; i++) {
             joinedOutput += (i == (strArr.length - 1)) ? "" : strArr[i] + ((i == strArr.length - 2) ? "" : join);
