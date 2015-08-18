@@ -13,7 +13,7 @@ public class LogLine {
     protected List<String> lineItems;
     protected ResultSet splitters;
     protected int cpcode;
-    public LogLine(String logline, String breaker, int cpcode, ResultSet splitters, ResultSet liveFix){
+    public LogLine(String logline, String breaker, int cpcode, ResultSet splitters){
         //Add one item to the log line
         Log.addLine();
         this.logline = logline;

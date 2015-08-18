@@ -15,7 +15,7 @@ public class LogDL extends Log{
         analyseLog();
     }
 
-    protected void readLog() throws IOException{
+    protected void readLog() throws IOException,SQLException{
         super.readLog();
     }
     protected void analyseLog() {

@@ -20,7 +20,6 @@ public class RunIt {
         File f = new File(fileLocation);
         ArrayList<File> logs = new ArrayList<File>(Arrays.asList(f.listFiles()));
             logs.stream().forEach(
-
                     item -> {
                         try {
                             LogFactory.makeLog(fileLocation, item.getName(), rsLogTypes, rsSplitters, rsLive);
@@ -34,6 +33,8 @@ public class RunIt {
                             System.out.println(e.getMessage());
                         } catch (InvocationTargetException e) {
                             System.out.println("invocation" + e.getMessage());
+                        } catch (IllegalArgumentException e) {
+                            System.out.println("argument" + e.getMessage());
                         } catch (SQLException e) {
                             System.out.println("sql" + e.getMessage());
                         }

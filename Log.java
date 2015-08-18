@@ -19,6 +19,7 @@ public abstract class  Log {
     protected List<? extends LogLine> logLines;
     protected static int lineCount = 0;
     public Log(String logname,String logType,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix) throws SQLException,IOException{
+        lineCount = 0;
         this.logName = logname;
         this.logType = logType;
         this.liveFix = liveFix;
@@ -34,12 +35,12 @@ public abstract class  Log {
         readLog();
     }
 
-    protected void readLog() throws IOException{
+    protected void readLog() throws IOException,SQLException{
         lineCount = 0;
         List<String> stringLines = LogReader.OpenReader(logName);
          //Convert the strings into objects of type logline after checking that they aren't header lines
         try {
-            this.logLines = stringLines.stream().filter(x -> (!(isHeader(x)))).map(y -> LogLineFactory.makeLogLine(y, breaker, cpcode, logSplitters,liveFix,logType)).collect(Collectors.toList());
+            this.logLines = stringLines.stream().filter(x -> (!(isHeader(x)))).map(y -> LogLineFactory.makeLogLine(this,y, breaker, cpcode, logSplitters,logType)).collect(Collectors.toList());
         } catch (Exception ex) {
             System.out.println("Problem with log file " + logName + " on line " + lineCount + ".");
         }
@@ -52,8 +53,8 @@ public abstract class  Log {
         outputs.put("cpcode",Integer.toString(cpcode));
         outputs.put("delivery_method", deliveryType);
         outputs.put("domain",domain);
-
     }
+
     protected void insertToDB(LogLine line) {
         //Add the fields that are determined by the log file rather than the log line
         addLogFields(line.getOutputs());
@@ -94,6 +95,8 @@ public abstract class  Log {
     public static int getLine() {
         return lineCount;
     }
+
+    protected String getName() { return logName;}
 
     protected boolean isHeader(String line) {
         String[] lineSplit = line.split("\\s+");
