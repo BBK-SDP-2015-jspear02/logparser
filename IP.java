@@ -8,7 +8,7 @@ public class IP {
         getIpNumber();
     }
     public long getIpNumber() {
-        String[] splitIpAddress = ipAddress.split(".");
+        String[] splitIpAddress = ipAddress.split("\\.");
         ipNumber = 0;
         for (int i = 0; i < splitIpAddress.length; i++) {
             int power = 3 - i;

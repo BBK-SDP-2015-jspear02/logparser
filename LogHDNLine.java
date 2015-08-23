@@ -5,9 +5,9 @@ import org.apache.commons.lang.StringEscapeUtils;
 import java.sql.ResultSet;
 
 public class LogHDNLine extends LogLine{
-    public LogHDNLine(String logline, String breaker, int cpcode, ResultSet splitters){
+    public LogHDNLine(Log log,String logline, String breaker, int cpcode, ResultSet splitters){
         //Add one item to the log line
-        super(logline,breaker,cpcode,splitters);
+        super(log,logline,breaker,cpcode,splitters);
         processLine();
     }
 
@@ -24,12 +24,11 @@ public class LogHDNLine extends LogLine{
             outputs.put("format", (dirArr[0].equals("i")) ? "HLS" : "HDS");
             outputs.put("path", dirArr[1]);
             outputs.put("file_ref", dirArr[2]);
-
             if((outputs.get("file_ref").indexOf(".m3u8")== -1 ) && (outputs.get("file_ref").indexOf("f4m")== -1 )) {
                 //Not a playlist file
                 String[] itemSplit = outputs.get("file_ref").split("_");
                 //Get the bandwidth being watched in kbps
-                outputs.put("bandwidth", (outputs.get("file_ref").indexOf("-Frag") != -1) ? itemSplit[0] : itemSplit[1] );
+                outputs.put("bandwidth", (outputs.get("format").equals("HDS")) ? itemSplit[0] : itemSplit[1] );
                 outputs.put("segment_count", "1");
                 outputs.put("duration", "10");
             } else {
@@ -47,6 +46,8 @@ public class LogHDNLine extends LogLine{
         // adding segment information to the logline
         outputs.put("throughput", Double.toString(Double.parseDouble(outputs.get("throughput")) + Double.parseDouble(line.getOutputs().get("throughput"))));
         outputs.put("scbytes", Integer.toString(Integer.parseInt(outputs.get("scbytes")) + Integer.parseInt(line.getOutputs().get("scbytes"))));
+        outputs.put("segment_lines", (outputs.containsKey("segment_lines")) ? outputs.get("segment_lines") + "," + line.getOutputs().get("log_line") : line.getOutputs().get("log_line"));
+
         //As long as it's not another reference file add to the duration and segment count.
         if(!(line.getOutputs().get("file_type").equals("m3u8"))) {
             //Add 10 as each 'chunk' is 10 seconds long

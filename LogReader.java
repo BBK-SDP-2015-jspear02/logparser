@@ -10,7 +10,7 @@ public class LogReader {
 
     //Open the file and return all the lines in a list of strings
     public static List<String> OpenReader(String logname) throws IOException {
-        FileReader reader = new FileReader(logname);
+        FileReader reader = new FileReader(RunIt.unprocessedLogs + logname );
 
         try (BufferedReader fileText = new BufferedReader(reader)) {
             return fileText.lines()

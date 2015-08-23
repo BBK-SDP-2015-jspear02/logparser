@@ -3,6 +3,7 @@ package code;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,12 +11,12 @@ import java.util.stream.Collectors;
 
 
 public class LogDL extends Log{
-    public LogDL(String logname,String logType, ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix) throws SQLException,IOException {
+    public LogDL(String logname,String logType, ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix) throws SQLException,IOException,ParseException {
         super(logname,logType,logDetails, logSplitters, liveFix);
         analyseLog();
     }
 
-    protected void readLog() throws IOException,SQLException{
+    protected void readLog() throws IOException,SQLException,ParseException{
         super.readLog();
     }
     protected void analyseLog() {
@@ -24,7 +25,6 @@ public class LogDL extends Log{
 
             List<LogDLLine> partialHits = this.logLines.stream().filter(x -> x.getOutputs().get("status").equals("206")).map(x -> (LogDLLine) x).collect(Collectors.toList());
             List<LogDLLine> fullHits = this.logLines.stream().filter(x -> !(x.getOutputs().get("status").equals("206"))).map(x -> (LogDLLine) x).collect(Collectors.toList());
-            partialHits.stream().forEach(x-> System.out.println(x.getOutputs().get("full_url")));
 
         //First create a map of all the distinct url_ipadrress_ua combinations. This is an original hit.
             Map<String,LogDLLine> sessionLines = new HashMap<>();
@@ -42,6 +42,8 @@ public class LogDL extends Log{
         sessionLines.forEach((key,logline)-> fullHits.add(logline));
         //Now stick them in the database!
         fullHits.stream().forEach(x-> insertToDB(x));
+
+        finalizeLog();
 
     }
 
