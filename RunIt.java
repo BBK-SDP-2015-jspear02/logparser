@@ -3,6 +3,8 @@ package code;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -24,14 +26,7 @@ public class RunIt {
         ArrayList<File> logs = new ArrayList<File>(Arrays.asList(f.listFiles()));
         for(File log : logs) {
             try {
-                try {
-                    Files.
-                    Files.move((Path)RunIt.unprocessedLogs + log.getName(), RunIt.processedLogs + log.getName(), REPLACE_EXISTING);
 
-
-                } catch (Exception ex) {
-                    System.out.println(ex.getMessage());
-                }
                 LogFactory.makeLog(log.getName(), rsLogTypes, rsSplitters, rsLive);
                 //Now move the log file from unprocessed to processed
             } catch (ClassNotFoundException e) {

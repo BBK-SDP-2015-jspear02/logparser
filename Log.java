@@ -1,15 +1,20 @@
 package code;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.apache.commons.lang.StringEscapeUtils;
+
 
 import java.text.ParseException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public abstract class  Log {
     //Splitters are the strings that mark the end of the generic info
@@ -57,16 +62,19 @@ public abstract class  Log {
         outputs.put("cpcode",Integer.toString(cpcode));
         outputs.put("delivery_method", deliveryType);
         outputs.put("domain",domain);
-        String[] setOutputs = "path,file_ref,type,file_name,referrer,directories,dir1,dir2".split(",");
+        String[] setOutputs = "path,file_ref,type,file_name,directories,dir1,dir2,ggviewid,gghostid,ggcampaignid".split(",");
         for(String output : setOutputs) {
-            if (!outputs.containsKey(output))  outputs.put(output,"");
+            if (!outputs.containsKey(output))  outputs.put(output,(output.equals("ggviewid")) ? "NULL"  : "");
         }
     }
 
     public static void addError() {
         errorCount++;
     }
+    protected void getCountry(LogLine line) {
+        ResultSet countryData = RunIt.db.select("SELECT c.countrylong from ip2location.ipcountry c where c.toIP >= l.ip_number order by c.toIP limit 1");
 
+    }
     protected void insertToDB(LogLine line) {
         //Add the fields that are determined by the log file rather than the log line
         addLogFields(line.getOutputs());
@@ -87,28 +95,36 @@ public abstract class  Log {
     }
     protected void finalizeLog() {
         if (Log.errorCount == 0) {
-            //Do geo lookup
-
+            Set<String> uniqueDates = new HashSet<String>();
+           logLines.stream().forEach(line -> uniqueDates.add(line.getOutputs().get("date")));;
+            //Do geo lookup to put the country information in there
+            RunIt.db.operate(this,"update statistics.logdata_temp l inner join ip2location.ip_country c ON MBRCONTAINS(c.ip_poly, POINTFROMWKB(POINT(l.ip_number, 0))) SET l.country = c.country_name;");
             //Insert into main logdata
             RunIt.db.operate(this, "INSERT INTO logdata SELECT * from logdata_temp;");
+            //Delete from the days from summary path that contain this domains and dates
+            RunIt.db.operate(this, "DELETE FROM summary_path WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
+            //Delete from the days from summary path that contain this domains and dates
+            RunIt.db.operate(this, "INSERT INTO summary_path(cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,duration,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country, AVG(duration), sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata  WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ") group by cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,date,type,gghostid,ggcampaignid");
+            //Delete from the days from summary client that contain this domains and dates
+            RunIt.db.operate(this, "DELETE FROM summary_client WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
+            //Delete from the days from summary path that contain this domains and dates
+            RunIt.db.operate(this, "INSERT INTO summary_client(cdn,cpcode,domain,client,dir1,country,device,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,dir1,country,device, sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata   WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")group by cdn,cpcode,domain,client,dir1,country,date,type,gghostid,ggcampaignid ");
+
             //Now record that the log has been succesfully processed
             RunIt.db.insert(this,"INSERT into processed_logs (logname, line_count) VALUES ('" + this.getName() + "'," + Log.getLine() + ")");
             //Now move the log file from unprocessed to processed
 
             try {
-                File log  = new File(RunIt.processedLogs + this.getName());
-                log.renameTo(new File(RunIt.unprocessedLogs + log.getName()));
+
+                Files.move(Paths.get(RunIt.unprocessedLogs + this.getName()), Paths.get(RunIt.processedLogs + this.getName()), REPLACE_EXISTING);
 
             } catch (Exception ex) {
-                System.out.println(ex.getMessage());
+                RunIt.logger.writeError(this.logName,0,ex.getMessage());
             }
-
         }
 
         // truncate table empty
         RunIt.db.operate(this, "TRUNCATE TABLE logdata_temp");
-
-
 
 
     }
@@ -120,6 +136,7 @@ public abstract class  Log {
             case "scbytes":
             case "status":
             case "log_line":
+            case "ggviewid":
                 return (item == null) ? "" : item.toString();
             default:
                 return (item == null) ? "''" : "'"+item.toString() + "'";
@@ -148,7 +165,14 @@ public abstract class  Log {
 
     }
 
-
+    protected String getUniqueDates(Set<String> dates) {
+        String dateStr = "";
+        String[] dateArr = dates.toArray(new String[dates.size()]);
+        for (int i = 0; i < dateArr.length; i++) {
+            dateStr += (i == (dateArr.length) - 1) ? "date = '" + dateArr[i] + "'" : "date = '" + dateArr[i] + "' or ";
+        }
+        return dateStr;
+    }
 
 
 }

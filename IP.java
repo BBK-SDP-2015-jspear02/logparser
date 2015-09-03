@@ -8,15 +8,18 @@ public class IP {
         getIpNumber();
     }
     public long getIpNumber() {
-        String[] splitIpAddress = ipAddress.split("\\.");
-        ipNumber = 0;
-        for (int i = 0; i < splitIpAddress.length; i++) {
-            int power = 3 - i;
-            int ip = Integer.parseInt(splitIpAddress[i]);
-            ipNumber += ip * Math.pow(256, power);
+        String[] ipAddressInArray = this.ipAddress.split("\\.");
+        long result = 0;
+        long ip = 0;
+        for (int x = 3; x >= 0; x--) {
+            ip = Long.parseLong(ipAddressInArray[3 - x]);
+            result |= ip << (x << 3);
         }
-        return ipNumber;
+
+        return result;
     }
+
+
     private void getGeoData() {
         //Run a query to get the geographical data
     }

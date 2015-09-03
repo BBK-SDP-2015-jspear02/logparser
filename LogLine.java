@@ -3,6 +3,7 @@ package code;
 import nl.bitwalker.useragentutils.UserAgent;
 import org.apache.commons.lang.StringEscapeUtils;
 
+import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -108,7 +109,7 @@ public class LogLine {
 
     protected void urlSplit(){
         String[] basicInfo = urlSplitBasic();
-        outputs.put("path",basicInfo[0]);
+
         outputs.put("client",basicInfo[1]);
 
         //Create the directory array
@@ -122,9 +123,9 @@ public class LogLine {
 
         outputs.put("file_ref",(dirList.size() > 0) ? dirList.get(dirList.size()-1) : "");
         outputs.put("directories", buildString(dirList.toArray(new String[dirList.size()]),"/"));
+        outputs.put("path",outputs.get("directories") + "/" + outputs.get("file_ref"));
 
         fileSplit();
-
     }
 
     protected String[] urlSplitBasic() {
@@ -135,6 +136,15 @@ public class LogLine {
 
         outputs.put("url", urlArr[0]);
         outputs.put("querystring",(urlArr.length > 1) ? urlArr[1] : "");
+        //Break down the querystring - but only if it exists.
+        if (!(outputs.get("querystring").equals(""))) {
+            try {
+                QueryString.processQueryString(urlNoHtml,outputs);
+            } catch (URISyntaxException ex) {
+                RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
+            }
+        }
+
 
 
         //Now get the url splitters which are relevant to this cpcode
