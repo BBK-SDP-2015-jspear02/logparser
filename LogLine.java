@@ -7,7 +7,9 @@ import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-
+/**
+ * This is the main Log line class. Any specific types of log line can inherit/override this one. It has a data structure called outputs which is a <String,String> map containing the information about each log line.
+ */
 public class LogLine {
     protected String logline;
     protected Log log;
@@ -25,16 +27,23 @@ public class LogLine {
         outputs = new HashMap<String,String>();
         //Split the line by the breaker that has been passed in
         splitLine(breaker);
-
     }
+
     public Map<String,String> getOutputs(){
         return this.outputs;
     }
+
+    /**
+     * This handles splitting each line by the breaker that is specified in the log file type.
+     * @param breaker The string the split the file on.
+     */
     private void splitLine(String breaker) {
         lineItems = Arrays.asList(logline.split(breaker));
-
     }
 
+    /**
+     * This handles processing each line and assigning the basic data to the outputs data structure. It then generates more data for the outputs map by breaking down the ip address and user agent.
+     */
     protected void processLine(){
             for (int i = 0; i < lineItems.size(); i++) {
                 String key;
@@ -83,15 +92,17 @@ public class LogLine {
             outputs.put("segment_count","1");
             outputs.put("log_file", log.getName());
             outputs.put("log_line", Integer.toString(Log.getLine()));
-
-            urlSplit();
+            //Now get information about the user agent
             uaSplit();
+            //Now get information about the ip address
             ipSplit();
 
     }
 
+    /**
+     * This handles getting specific information about the user agent from the user agent string and assigning it to the outputs data structure.
+     */
     private void uaSplit() {
-       // UserAgentStringParser parser = UADetectorServiceFactory.getResourceModuleParser();
         UserAgent agent = UserAgent.parseUserAgentString((String) outputs.get("user_agent"));
         outputs.put("browser", agent.getBrowser().getName());
         outputs.put("device",agent.getOperatingSystem().getDeviceType().getName());
@@ -99,91 +110,17 @@ public class LogLine {
 
     }
 
+    /**
+     * This handles the generation of the ip number and assigning it to the outputs data structure.
+     */
     private void ipSplit() {
         IP ip = new IP(outputs.get("ip_address"));
         outputs.put("ip_number",Long.toString(ip.getIpNumber()));
-        outputs.put("country", ip.get("country"));
-        outputs.put("region", ip.get("region"));
-        outputs.put("city", ip.get("city"));
     }
-
-    protected void urlSplit(){
-        String[] basicInfo = urlSplitBasic();
-
-        outputs.put("client",basicInfo[1]);
-
-        //Create the directory array
-        List<String> dirList = new LinkedList<String>(Arrays.asList(basicInfo[0].split("/")));
-        if (outputs.get("client").equals("STANDARD")) {
-            outputs.put("client", dirList.remove(0));
-        }
-
-        outputs.put("dir1", (dirList.size() > 1) ? dirList.get(0) : "");
-        outputs.put("dir2", (dirList.size() > 2) ? dirList.get(1) : "");
-
-        outputs.put("file_ref",(dirList.size() > 0) ? dirList.get(dirList.size()-1) : "");
-        outputs.put("directories", buildString(dirList.toArray(new String[dirList.size()]),"/"));
-        outputs.put("path",outputs.get("directories") + "/" + outputs.get("file_ref"));
-
-        fileSplit();
-    }
-
-    protected String[] urlSplitBasic() {
-        //First clean up the url of any unusual characters
-        String urlNoHtml = StringEscapeUtils.unescapeHtml(outputs.get("full_url"));
-        //Then break the url up into querystring and stem
-        String[] urlArr = urlNoHtml.split("\\?");
-
-        outputs.put("url", urlArr[0]);
-        outputs.put("querystring",(urlArr.length > 1) ? urlArr[1] : "");
-        //Break down the querystring - but only if it exists.
-        if (!(outputs.get("querystring").equals(""))) {
-            try {
-                QueryString.processQueryString(urlNoHtml,outputs);
-            } catch (URISyntaxException ex) {
-                RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
-            }
-        }
-
-
-
-        //Now get the url splitters which are relevant to this cpcode
-        String[] rtnArray = new String[2];
-
-        try {
-            while (splitters.next()) {
-                if(outputs.get("url").toString().indexOf(splitters.getString("split")) != -1) {
-                    //Remove the base url
-                    rtnArray[0] = outputs.get("url").toString().replace(splitters.getString("split"),"");
-                    rtnArray[1] = splitters.getString("client");
-                    break;
-                }
-            }
-            //Move back to the front of the recordset
-            splitters.beforeFirst();
-        } catch (SQLException ex) {
-            RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
-            rtnArray[0] = "";
-            rtnArray[1] = "";
-        }
-        return rtnArray;
-    }
-
-    protected void fileSplit() {
-        String[] fileArr = outputs.get("file_ref").split("\\.");
-        outputs.put("file_type", (fileArr.length > 0) ? fileArr[fileArr.length-1] : "UNKNOWN");
-        outputs.put("file_name", buildString(fileArr,"\\."));
-    }
-
-    //A method for rebuilding a string after it has been broken apart into an array - similar to implode in php
-    protected String buildString(String[] strArr, String join) {
-        String joinedOutput = "";
-        for (int i = 0; i < strArr.length; i++) {
-            joinedOutput += (i == (strArr.length - 1)) ? "" : strArr[i] + ((i == strArr.length - 2) ? "" : join);
-        }
-        return joinedOutput;
-    }
-
+    /**
+     * This handles adding a segment back in to a master download
+     * @param line The segment line that is being added back in to the master
+     */
     public void addSegment(LogLine line) {
         // adding segment information to the logline
         outputs.put("throughput", Double.toString(Double.parseDouble(outputs.get("throughput")) + Double.parseDouble(line.getOutputs().get("throughput"))));

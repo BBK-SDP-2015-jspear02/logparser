@@ -1,6 +1,8 @@
 package code;
 import java.sql.*;
-
+/**
+ * This class first is used to run any database operations. It is only instantiated once - on RunIt.
+ */
 public class Database {
     private Connection conn;
     private static final String url = "jdbc:mysql://localhost/statistics";
@@ -12,6 +14,10 @@ public class Database {
     public Database() {
         connect();
     }
+
+    /**
+     * Handles setting up the connection to the database.
+     */
     private void connect() {
         try {
             conn = DriverManager.getConnection(url, username, password);
@@ -23,6 +29,11 @@ public class Database {
             throw new IllegalStateException("Cannot connect the database!", e);
         }
     }
+
+    /**
+     * Any select queries are handled here.
+     * @return rs - the result set containing the data that has been queried.
+     */
     public ResultSet select(String sql) {
         try {
             Statement stmt = conn.createStatement();
@@ -34,22 +45,49 @@ public class Database {
 
     }
 
+    /**
+     * Any select queries are handled here.
+     * @param log The log file that is being read at the time of this insert
+     * @param sql The actual sql statement which is being run on the insert
+     */
     public void insert(Log log,String sql) {
         try {
             Statement stmt = conn.createStatement();
             System.out.println(sql);
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            RunIt.logger.writeError(log.getName(),0,e.getMessage());
+            RunIt.logger.writeError(log,0,e.getMessage());
         }
 
     }
+    /**
+     * Any select queries are handled here.
+     * @param log The name of the file that is being read at the time of this error
+     * @param sql The actual sql statement which is being run on the insert
+     */
+    public void insertError(String log,String sql) {
+        try {
+            Statement stmt = conn.createStatement();
+            System.out.println(sql);
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            RunIt.logger.writeError(log,0,e.getMessage());
+        }
 
+    }
+    /**
+     * For speed, as inserting data one record at a time is very slow. This query builds up one large insert of x rows.
+     * When it reaches x rows or the end of the log file it actually runs the query.
+     * @param log The log file that is being read at the time of this insert
+     * @param fields The fields to be inserted to part of the sql
+     * @param values The values to be inserted part of the sql statement
+     * @param logLine The line of the log file that is being processed.
+     */
     public void bulkInsert(Log log, String fields, String values, int logLine) {
-        if ((insertCount == 500)|| (logLine == Log.getLine())) {
+        if ((insertCount == 10)|| (logLine == Log.getLine())) {
             //Insert every 200 rows or when the log file is finished.
             this.values += values;
-            //Do a bulk insert every 1000 rows
+
             insert(log,this.fields + this.values);
             insertCount = 0;
             this.values = "";
@@ -61,25 +99,31 @@ public class Database {
 
 
     }
-
+    /**
+     * Used to run operations such as truncation, updates and moving data from one table to another
+     * When it reaches x rows or the end of the log file it actually runs the query.
+     * @param log The log file that is being read at the time of this insert
+     * @param sql The sql statement that is being executed
+     */
     public void operate(Log log,String sql) {
         try {
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            RunIt.logger.writeError(log.getName(),0,e.getMessage());
+            RunIt.logger.writeError(log,0,e.getMessage());
         }
     }
-
-    public void insertError(String sql) {
+    /**
+     * Used to run operations such as truncation, updates and moving data from one table to another when not using a log file
+     * When it reaches x rows or the end of the log file it actually runs the query.
+     * @param sql The sql statement that is being executed
+     */
+    public void operate(String sql) {
         try {
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
-
-            //throw new IllegalStateException("Cannot execute query!" + e.getMessage(), e);
+            RunIt.logger.writeError(e.getMessage());
         }
-
     }
 }

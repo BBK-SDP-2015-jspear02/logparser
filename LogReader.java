@@ -6,9 +6,17 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * This class handles the i/o process of reading in the log files
+ */
 public class LogReader {
 
-    //Open the file and return all the lines in a list of strings
+    /**
+     * Reads in the file and returns a list of text lines
+     * @param logname The name of the log file which is being created
+     * @return List of log lines as text
+     * @throws IOException If there is an error when attempting to read the file
+     */
     public static List<String> OpenReader(String logname) throws IOException {
         FileReader reader = new FileReader(RunIt.unprocessedLogs + logname );
 

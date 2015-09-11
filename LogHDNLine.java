@@ -1,47 +1,24 @@
 package code;
 
-import org.apache.commons.lang.StringEscapeUtils;
 
+import java.net.URISyntaxException;
 import java.sql.ResultSet;
-
+import java.sql.SQLException;
+/**
+ * This is the HDN Log line class which inherits from the main log line class.
+ */
 public class LogHDNLine extends LogLine{
-    public LogHDNLine(Log log,String logline, String breaker, int cpcode, ResultSet splitters){
+    public LogHDNLine(Log log,String logline, String breaker, int cpcode, ResultSet splitters) throws URISyntaxException,SQLException{
         //Add one item to the log line
         super(log,logline,breaker,cpcode,splitters);
         processLine();
+        Url.urlSplitHDN(outputs,splitters);
     }
 
-    protected void urlSplit(){
-        String[] basicInfo = super.urlSplitBasic();
-
-        //Create the directory array
-        String[] dirArr = basicInfo[0].split("/");
-        outputs.put("segment_count", "0");
-        outputs.put("duration", "0");
-
-        //HDN follows a special pattern. If the first directory is I then it is for HLS otherwise it is HDS
-        if (dirArr.length > 1) {
-            outputs.put("format", (dirArr[0].equals("i")) ? "HLS" : "HDS");
-            outputs.put("path", dirArr[1]);
-            outputs.put("file_ref", dirArr[2]);
-            if((outputs.get("file_ref").indexOf(".m3u8")== -1 ) && (outputs.get("file_ref").indexOf("f4m")== -1 )) {
-                //Not a playlist file
-                String[] itemSplit = outputs.get("file_ref").split("_");
-                //Get the bandwidth being watched in kbps
-                outputs.put("bandwidth", (outputs.get("format").equals("HDS")) ? itemSplit[0] : itemSplit[1] );
-                outputs.put("segment_count", "1");
-                outputs.put("duration", "10");
-            } else {
-                outputs.put("segment_count", "0");
-                outputs.put("duration", "0");
-            }
-        } else {
-            //Request for the crossdomain file. Not charged to a client but attributed to GG
-            outputs.put("client", "GG");
-            outputs.put("file_ref", basicInfo[0]);
-        }
-        super.fileSplit();
-   }
+    /**
+     * This will add in data from a segment file to a master playlist
+     * @param line The segment line which is being added to the master
+     */
     public void addSegment(LogHDNLine line) {
         // adding segment information to the logline
         outputs.put("throughput", Double.toString(Double.parseDouble(outputs.get("throughput")) + Double.parseDouble(line.getOutputs().get("throughput"))));
@@ -56,7 +33,6 @@ public class LogHDNLine extends LogLine{
             int segmentBandwidth = Integer.parseInt(line.getOutputs().get("bandwidth"));
             //If bandwidth is already set then run a rolling average - otherwise set bandwidth to the first segment.
             outputs.put("bandwidth", Integer.toString((outputs.containsKey("bandwidth")) ? (Integer.parseInt(outputs.get("bandwidth")) + segmentBandwidth) / 2 : segmentBandwidth));
-            System.out.println(outputs.get("bandwidth"));
         }
     }
 }

@@ -1,12 +1,17 @@
 package code;
-
+/**
+ * This class handles any operations related to IP address. Originally there were going to be far more.
+ */
 public class IP {
-    private String ipAddress, country, region, city;
-    private long ipNumber;
+    private String ipAddress;
+
     public IP(String ipAddress){
         this.ipAddress = ipAddress;
         getIpNumber();
     }
+    /**
+     * @return result The ip number as a long translated from an IP Address
+     */
     public long getIpNumber() {
         String[] ipAddressInArray = this.ipAddress.split("\\.");
         long result = 0;
@@ -19,11 +24,4 @@ public class IP {
         return result;
     }
 
-
-    private void getGeoData() {
-        //Run a query to get the geographical data
-    }
-    public String get(String item){
-        return country;
-    }
 }
