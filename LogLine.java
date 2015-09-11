@@ -8,7 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 /**
- * This is the main Log line class. Any specific types of log line can inherit/override this one. It has a data structure called outputs which is a <String,String> map containing the information about each log line.
+ * This is the main Log line class. Any specific types of log line can inherit/override this one. It has a data structure called outputs which is a map with a string key and value pair containing the information about each log line.
  */
 public class LogLine {
     protected String logline;
