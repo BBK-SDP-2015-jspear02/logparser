@@ -19,7 +19,6 @@ public class LogLineFactory {
      */
     public static LogLine makeLogLine(Log log,String logline, String breaker, int cpcode, ResultSet splitters, String logLineType)  {
         try {
-            System.out.println(Log.lineCount);
             return (LogLine) Class.forName("code." + logLineType + "Line").getConstructor(Log.class,String.class, String.class, int.class, ResultSet.class).newInstance(log,logline, breaker, cpcode, splitters);
         }catch (ClassNotFoundException ex) {
             RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());

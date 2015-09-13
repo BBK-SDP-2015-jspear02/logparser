@@ -12,7 +12,7 @@ public class LogHDNLine extends LogLine{
         //Add one item to the log line
         super(log,logline,breaker,cpcode,splitters);
         processLine();
-        Url.urlSplitHDN(outputs,splitters);
+        Url.urlSplitLive(outputs,splitters);
     }
 
     /**

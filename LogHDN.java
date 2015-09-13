@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
  */
 public class LogHDN extends Log{
     private double tput;
-    public LogHDN(String logname,String logType, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix) throws  Exception{
-        super(logname,logType,logDetails, logSplitters,liveFix);
+    public LogHDN(String logname,String logType, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix,Database db) throws  Exception{
+        super(logname,logType,logDetails, logSplitters,liveFix,db);
         tput = 0;
     }
 
@@ -141,7 +141,7 @@ public class LogHDN extends Log{
             try {
                 while (liveFix.next()) {
                     try {
-                        System.out.println(line.getOutputs().get("stream") + "   =   " + liveFix.getString("event") + "_1@" + liveFix.getString("stream"));
+                       // System.out.println(line.getOutputs().get("stream") + "   =   " + liveFix.getString("event") + "_1@" + liveFix.getString("stream"));
                         if ((cpcode == liveFix.getInt("cpcode")) && (line.getOutputs().get("stream").equals(liveFix.getString("event") + "_1@" + liveFix.getString("stream")))) {
 
                             line.getOutputs().put("client", liveFix.getString("client"));

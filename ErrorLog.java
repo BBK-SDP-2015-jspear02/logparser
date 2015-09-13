@@ -6,8 +6,15 @@ package code;
  */
 public class ErrorLog {
     private Database db;
-    public ErrorLog(Database db) {
+    private static ErrorLog log;
+    private ErrorLog(Database db) {
         this.db = db;
+    }
+    public static ErrorLog getInstance(Database db){
+        if (log == null) {
+            log = new ErrorLog(db);
+        }
+        return log;
     }
     /**
      * This handles the processing of any error that couldn't be passed up the chain because of exception handling limitation with stream.

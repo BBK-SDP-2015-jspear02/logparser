@@ -11,10 +11,16 @@ public class Database {
     private String fields;
     private String values;
     private int insertCount;
-    public Database() {
+    private static Database db;
+    private Database() {
         connect();
     }
-
+    public static Database getInstance(){
+        if (db == null) {
+            db = new Database();
+        }
+        return db;
+    }
     /**
      * Handles setting up the connection to the database.
      */
@@ -68,7 +74,7 @@ public class Database {
     public void insertError(String log,String sql) {
         try {
             Statement stmt = conn.createStatement();
-            System.out.println(sql);
+           // System.out.println(sql);
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
             RunIt.logger.writeError(log,0,e.getMessage());

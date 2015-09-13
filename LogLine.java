@@ -13,6 +13,7 @@ import java.util.*;
 public class LogLine {
     protected String logline;
     protected Log log;
+    protected IP ip;
     protected Map<String,String> outputs;
     protected List<String> lineItems;
     protected ResultSet splitters;
@@ -114,7 +115,7 @@ public class LogLine {
      * This handles the generation of the ip number and assigning it to the outputs data structure.
      */
     private void ipSplit() {
-        IP ip = new IP(outputs.get("ip_address"));
+        ip = new IP(outputs.get("ip_address"));
         outputs.put("ip_number",Long.toString(ip.getIpNumber()));
     }
     /**

@@ -21,16 +21,19 @@ public abstract class  Log {
     protected ResultSet logSplitters;
     //Each log has a unique name, cpcode, domain and logtype
     protected int cpcode;
+    protected Database db;
     protected ResultSet liveFix;
     protected String logName,logType, domain, cdn, deliveryType, client, breaker;
     protected List<? extends LogLine> logLines;
     protected List<String> stringLines;
     protected static int lineCount = 0;
     protected static int errorCount = 0;
-    public Log(String logname,String logType,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix) throws SQLException,IOException,ParseException,Exception{
+    public Log(String logname,String logType,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db) throws SQLException,IOException,ParseException,Exception{
+
         this.logName = logname;
         this.logType = logType;
         this.liveFix = liveFix;
+        this.db = db;
         this.logSplitters = logSplitters;
         this.cpcode = logDetails.getInt("cpcode");
         this.domain = logDetails.getString("domain");
@@ -39,6 +42,7 @@ public abstract class  Log {
         this.client = logDetails.getString("client");
         //Defines what the line items are split by - usually tab but sometimes space.
         this.breaker = logDetails.getString("split_characters");
+        System.out.println("START: Log read....");
         readLog();
     }
 
@@ -69,6 +73,8 @@ public abstract class  Log {
                 filter(x -> (!(isHeader(x)))) // Make sure it is not a header line
                     .map(y -> LogLineFactory.makeLogLine(this, y, breaker, cpcode, logSplitters, logType)) // Create the log line object
                         .collect(Collectors.toList());
+
+        System.out.println("COMPLETE: Log read....");
 
     }
 
@@ -108,7 +114,7 @@ public abstract class  Log {
         fields = sql + fields.substring(0, fields.lastIndexOf(",")) + ") VALUES ";
         inputs = "(" + inputs.substring(0, inputs.lastIndexOf(",")) + ")";
 
-        RunIt.db.bulkInsert(this,fields, inputs,Integer.parseInt(line.getOutputs().get("log_line")));
+        Database.getDB().bulkInsert(this, fields, inputs, Integer.parseInt(line.getOutputs().get("log_line")));
     }
 
     /**
@@ -117,34 +123,31 @@ public abstract class  Log {
      */
     protected void finalizeLog() {
         if (Log.errorCount == 0) {
+            System.out.println("START: finalize log queries");
             Set<String> uniqueDates = new HashSet<String>();
             //Look up the unique dates in the log file. This is needed for creating efficient summary table queries.
            logLines.stream().forEach(line -> uniqueDates.add(line.getOutputs().get("date")));
             //Do geo lookup to put the country information in there
-            RunIt.db.operate(this,"update statistics.logdata_temp l inner join ip2location.ip_country c ON MBRCONTAINS(c.ip_poly, POINTFROMWKB(POINT(l.ip_number, 0))) SET l.country = c.country_name;");
+            db.operate(this, "update statistics.logdata_temp l inner join ip2location.ip_country c ON MBRCONTAINS(c.ip_poly, POINTFROMWKB(POINT(l.ip_number, 0))) SET l.country = c.country_name;");
             //Insert into main logdata
-            RunIt.db.operate(this, "INSERT INTO logdata SELECT * from logdata_temp;");
+            db.operate(this, "INSERT INTO logdata SELECT * from logdata_temp;");
             //Delete from the days from summary path that contain this domains and dates
-            RunIt.db.operate(this, "DELETE FROM summary_path WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
+            db.operate(this, "DELETE FROM summary_path WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
             //Delete from the days from summary path that contain this domains and dates
-            RunIt.db.operate(this, "INSERT INTO summary_path(cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,duration,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country, AVG(duration), sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata  WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ") group by cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,date,type,gghostid,ggcampaignid");
+            db.operate(this, "INSERT INTO summary_path(cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,duration,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country, AVG(duration), sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata  WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ") group by cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,date,type,gghostid,ggcampaignid");
             //Delete from the days from summary client that contain this domains and dates
-            RunIt.db.operate(this, "DELETE FROM summary_client WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
+            db.operate(this, "DELETE FROM summary_client WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
             //Delete from the days from summary path that contain this domains and dates
-            RunIt.db.operate(this, "INSERT INTO summary_client(cdn,cpcode,domain,client,dir1,country,device,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,dir1,country,device, sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata   WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")group by cdn,cpcode,domain,client,dir1,country,date,type,gghostid,ggcampaignid ");
+            db.operate(this, "INSERT INTO summary_client(cdn,cpcode,domain,client,dir1,country,device,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,dir1,country,device, sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata   WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")group by cdn,cpcode,domain,client,dir1,country,date,type,gghostid,ggcampaignid ");
 
             //Now record that the log has been successfully processed
-            RunIt.db.insert(this,"INSERT into processed_logs (logname, line_count) VALUES ('" + this.getName() + "'," + Log.getLine() + ")");
-            //Now move the log file from unprocessed to processed
-            try {
-                Files.move(Paths.get(RunIt.unprocessedLogs + this.getName()), Paths.get(RunIt.processedLogs + this.getName()), REPLACE_EXISTING);
-            } catch (Exception ex) {
-                RunIt.logger.writeError(this,0,ex.getMessage());
-            }
+            db.insert(this,"INSERT into processed_logs (logname, line_count) VALUES ('" + this.getName() + "'," + Log.getLine() + ")");
+            System.out.println("END: finalize log queries");
+
         }
 
         // truncate temporary table
-        RunIt.db.operate(this, "TRUNCATE TABLE logdata_temp");
+        db.operate(this, "TRUNCATE TABLE logdata_temp");
 
     }
     /**

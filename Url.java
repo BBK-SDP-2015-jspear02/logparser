@@ -22,7 +22,7 @@ public class Url {
      * @throws SQLException If there is an error when looping through the recordset
      * @throws URISyntaxException If there is an error when processing the querystring
      */
-    public static String[] urlSplitBasic(Map<String,String> outputs,ResultSet splitters) throws SQLException, URISyntaxException{
+    private static String[] urlSplitBasic(Map<String,String> outputs,ResultSet splitters) throws SQLException, URISyntaxException{
 
         //First clean up the url of any unusual characters
         String urlNoHtml = StringEscapeUtils.unescapeHtml(outputs.get("full_url"));
