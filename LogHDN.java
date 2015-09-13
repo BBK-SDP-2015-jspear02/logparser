@@ -30,7 +30,7 @@ public class LogHDN extends Log{
         try {
             this.logLines = stringLines.stream().
                     filter(x -> (!(isHeader(x)))) // check it isn't a header line
-                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, cpcode, logSplitters, logType)) // create the object
+                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, logSplitters, logType)) // create the object
                     .filter(line -> (playlistCheck(line.getOutputs().get("file_ref")) || crossDomainCheck(line.getOutputs().get("file_ref")))) //Check it is a playlist or crossdomain request
                     .collect(Collectors.toList());
 
@@ -71,7 +71,7 @@ public class LogHDN extends Log{
                 //Don't read the header lines
                 if (!isHeader(line)) {
                     // Create a new temporary log line which exists for this loop
-                    LogLine segmentLine = LogLineFactory.makeLogLine(this,line, breaker,cpcode,logSplitters,logType);
+                    LogLine segmentLine = LogLineFactory.makeLogLine(this,line, breaker,logSplitters,logType);
                     //Make sure that it is a segment rather than a playlist or a crossdomain file
                     if (!(playlistCheck(segmentLine.getOutputs().get("file_ref")) || crossDomainCheck(segmentLine.getOutputs().get("file_ref")))) {
                         //A combination of user agent, ipaddress and path should make a unique viewer for this segment

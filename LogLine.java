@@ -14,16 +14,15 @@ public class LogLine {
     protected String logline;
     protected Log log;
     protected IP ip;
+    protected int cpcode;
     protected Map<String,String> outputs;
     protected List<String> lineItems;
     protected ResultSet splitters;
-    protected int cpcode;
-    public LogLine(Log log, String logline, String breaker, int cpcode, ResultSet splitters){
+    public LogLine(Log log, String logline, String breaker, ResultSet splitters){
         //Add one item to the log line
         Log.addLine();
         this.log = log;
         this.logline = logline;
-        this.cpcode = cpcode;
         this.splitters = splitters;
         outputs = new HashMap<String,String>();
         //Split the line by the breaker that has been passed in

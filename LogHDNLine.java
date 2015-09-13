@@ -8,9 +8,9 @@ import java.sql.SQLException;
  * This is the HDN Log line class which inherits from the main log line class.
  */
 public class LogHDNLine extends LogLine{
-    public LogHDNLine(Log log,String logline, String breaker, int cpcode, ResultSet splitters) throws URISyntaxException,SQLException{
+    public LogHDNLine(Log log,String logline, String breaker,ResultSet splitters) throws URISyntaxException,SQLException{
         //Add one item to the log line
-        super(log,logline,breaker,cpcode,splitters);
+        super(log,logline,breaker,splitters);
         processLine();
         Url.urlSplitLive(outputs,splitters);
     }

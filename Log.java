@@ -29,7 +29,6 @@ public abstract class  Log {
     protected static int lineCount = 0;
     protected static int errorCount = 0;
     public Log(String logname,String logType,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db) throws SQLException,IOException,ParseException,Exception{
-
         this.logName = logname;
         this.logType = logType;
         this.liveFix = liveFix;
@@ -71,7 +70,7 @@ public abstract class  Log {
          //Convert the strings into objects of type logline after checking that they aren't header lines
         this.logLines = stringLines.stream().
                 filter(x -> (!(isHeader(x)))) // Make sure it is not a header line
-                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, cpcode, logSplitters, logType)) // Create the log line object
+                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, logSplitters, logType)) // Create the log line object
                         .collect(Collectors.toList());
 
         System.out.println("COMPLETE: Log read....");
@@ -114,7 +113,7 @@ public abstract class  Log {
         fields = sql + fields.substring(0, fields.lastIndexOf(",")) + ") VALUES ";
         inputs = "(" + inputs.substring(0, inputs.lastIndexOf(",")) + ")";
 
-        Database.getDB().bulkInsert(this, fields, inputs, Integer.parseInt(line.getOutputs().get("log_line")));
+        db.bulkInsert(this, fields, inputs, Integer.parseInt(line.getOutputs().get("log_line")));
     }
 
     /**
@@ -126,7 +125,7 @@ public abstract class  Log {
             System.out.println("START: finalize log queries");
             Set<String> uniqueDates = new HashSet<String>();
             //Look up the unique dates in the log file. This is needed for creating efficient summary table queries.
-           logLines.stream().forEach(line -> uniqueDates.add(line.getOutputs().get("date")));
+            logLines.stream().forEach(line -> uniqueDates.add(line.getOutputs().get("date")));
             //Do geo lookup to put the country information in there
             db.operate(this, "update statistics.logdata_temp l inner join ip2location.ip_country c ON MBRCONTAINS(c.ip_poly, POINTFROMWKB(POINT(l.ip_number, 0))) SET l.country = c.country_name;");
             //Insert into main logdata
