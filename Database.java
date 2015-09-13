@@ -5,26 +5,23 @@ import java.sql.*;
  */
 public class Database {
     private Connection conn;
-    private static final String url = "jdbc:mysql://localhost/statistics";
-    private static final String username = "root";
-    private static final String password = "groovy";
     private String fields;
     private String values;
     private int insertCount;
     private static Database db;
-    private Database() {
-        connect();
+    private Database(String url, String username, String password) {
+        connect(url,username,password);
     }
-    public static Database getInstance(){
+    public static Database getInstance(String url,String username, String password){
         if (db == null) {
-            db = new Database();
+            db = new Database(url,username,password);
         }
         return db;
     }
     /**
      * Handles setting up the connection to the database.
      */
-    private void connect() {
+    private void connect(String url,String username, String password) {
         try {
             conn = DriverManager.getConnection(url, username, password);
             fields = "";
@@ -56,14 +53,11 @@ public class Database {
      * @param log The log file that is being read at the time of this insert
      * @param sql The actual sql statement which is being run on the insert
      */
-    public void insert(Log log,String sql) {
-        try {
+    public void insert(Log log,String sql) throws SQLException{
+
             Statement stmt = conn.createStatement();
             System.out.println(sql);
             stmt.executeUpdate(sql);
-        } catch (SQLException e) {
-            RunIt.logger.writeError(log,0,e.getMessage());
-        }
 
     }
     /**
@@ -71,14 +65,11 @@ public class Database {
      * @param log The name of the file that is being read at the time of this error
      * @param sql The actual sql statement which is being run on the insert
      */
-    public void insertError(String log,String sql) {
-        try {
+    public void insertError(String log,String sql) throws SQLException{
+
             Statement stmt = conn.createStatement();
            // System.out.println(sql);
             stmt.executeUpdate(sql);
-        } catch (SQLException e) {
-            RunIt.logger.writeError(log,0,e.getMessage());
-        }
 
     }
     /**
@@ -89,7 +80,7 @@ public class Database {
      * @param values The values to be inserted part of the sql statement
      * @param logLine The line of the log file that is being processed.
      */
-    public void bulkInsert(Log log, String fields, String values, int logLine) {
+    public void bulkInsert(Log log, String fields, String values, int logLine) throws SQLException{
         if ((insertCount == 10)|| (logLine == Log.getLine())) {
             //Insert every 200 rows or when the log file is finished.
             this.values += values;
@@ -111,25 +102,18 @@ public class Database {
      * @param log The log file that is being read at the time of this insert
      * @param sql The sql statement that is being executed
      */
-    public void operate(Log log,String sql) {
-        try {
+    public void operate(Log log,String sql) throws SQLException{
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
-        } catch (SQLException e) {
-            RunIt.logger.writeError(log,0,e.getMessage());
-        }
+
     }
     /**
      * Used to run operations such as truncation, updates and moving data from one table to another when not using a log file
      * When it reaches x rows or the end of the log file it actually runs the query.
      * @param sql The sql statement that is being executed
      */
-    public void operate(String sql) {
-        try {
+    public void operate(String sql) throws SQLException{
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
-        } catch (SQLException e) {
-            RunIt.logger.writeError(e.getMessage());
-        }
     }
 }

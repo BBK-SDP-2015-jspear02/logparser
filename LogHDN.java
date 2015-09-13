@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
  */
 public class LogHDN extends Log{
     private double tput;
-    public LogHDN(String logname,String logType, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix,Database db) throws  Exception{
-        super(logname,logType,logDetails, logSplitters,liveFix,db);
+    public LogHDN(String logname, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix,Database db) throws Exception{
+        super(logname,logDetails, logSplitters,liveFix,db);
         tput = 0;
     }
 
@@ -25,7 +25,7 @@ public class LogHDN extends Log{
     protected void readLog() throws Exception{
         lineCount = 0;
         errorCount = 0;
-        stringLines = LogReader.OpenReader(logName);
+        stringLines = TextReader.OpenReader(logName);
         //Convert the strings into objects of type logline after checking that they aren't header lines
         try {
             this.logLines = stringLines.stream().
@@ -50,9 +50,9 @@ public class LogHDN extends Log{
 
         List<LogHDNLine> masterHits = this.logLines.stream()
                     .filter(x -> playlistCheck(x.getOutputs().get("file_ref"))) //First get all the master playlists hits by checking that they are called master.m3u8 or manifest.f4m
-                         .map(line -> fixLive(line)) // Now do the live fix on them - attributing client information to them
                             .map(x -> (LogHDNLine) x) // Cast them to LogHDNLine
                                 .collect(Collectors.toList());
+
         //Now get all the cross domain hits and seperate them into their own list. They will be added back in later
         List<LogHDNLine> crossDomainHits = this.logLines.stream().filter(x -> (x.getOutputs().get("file_ref").equals("crossdomain.xml"))).map(x -> (LogHDNLine) x).collect(Collectors.toList());
         //This is the final list that will be entered into the database - currently empty
@@ -123,11 +123,16 @@ public class LogHDN extends Log{
         finalHits.addAll(masterHits);
         //Now add the crossdomain hits back in
         finalHits.addAll(crossDomainHits);
-
+        //Now loop through all items in master hits and attribute live data to them
+        for (LogLine hit : finalHits) {
+            hit = fixLive(hit);
+        }
         //re-assign back to loglines
         logLines = finalHits;
         //Insert to the tempporary database table
-        logLines.stream().forEach(x-> insertToDB(x));
+        for(LogLine line: logLines){
+            insertToDB(line);
+        }
 
         finalizeLog();
     }
@@ -136,9 +141,8 @@ public class LogHDN extends Log{
      * This handles attributing data to a client and directory. It matches up lines with the fix_live table and then re-processes part of the line so that it has the correct client/ directory information.
      * @param line The log line that is currently being checked to see if it can be attributed to a client
      * */
-    protected LogLine fixLive(LogLine line){
+    protected LogLine fixLive(LogLine line) throws SQLException{
 
-            try {
                 while (liveFix.next()) {
                     try {
                        // System.out.println(line.getOutputs().get("stream") + "   =   " + liveFix.getString("event") + "_1@" + liveFix.getString("stream"));
@@ -156,9 +160,7 @@ public class LogHDN extends Log{
                 }
                 //Reset the result set
                 liveFix.beforeFirst();
-            } catch (SQLException ex) {
-                RunIt.logger.writeError(this,Log.getLine(),ex.getMessage());
-            }
+
 
         return line;
 

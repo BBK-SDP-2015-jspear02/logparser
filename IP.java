@@ -1,4 +1,7 @@
 package code;
+
+import sun.net.util.IPAddressUtil;
+
 /**
  * This class handles any operations related to IP address. Originally there were going to be far more.
  */
@@ -6,6 +9,9 @@ public class IP {
     private String ipAddress;
 
     public IP(String ipAddress){
+        if ((ipAddress == null) || (ipAddress.equals("") || (!IPAddressUtil.isIPv4LiteralAddress(ipAddress)))) {
+            throw new IllegalArgumentException("The ip address field is empty!");
+        }
         this.ipAddress = ipAddress;
         getIpNumber();
     }

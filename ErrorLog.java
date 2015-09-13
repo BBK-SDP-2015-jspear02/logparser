@@ -1,4 +1,7 @@
 package code;
+
+import java.sql.SQLException;
+
 /**
  * This class first is used to handle any errors thrown during the log processing session
  * Any errors in an individual log file should be thrown back here, where they are entered into the logger.
@@ -24,7 +27,12 @@ public class ErrorLog {
      */
     public void writeError(Log log, int line,String message) {
         Log.addError();
-        db.insert(log, "INSERT INTO error_log (logfile,line,message) VALUES ('" + log.getName() + "','" + line + "','" + checkMessage(message) + "');");
+        try {
+            db.insert(log, "INSERT INTO error_log (logfile,line,message) VALUES ('" + log.getName() + "','" + line + "','" + checkMessage(message) + "');");
+        } catch (SQLException ex){
+            System.out.println("MAJOR ALERT! The error logger has not been able to make an entry in to the database.");
+        }
+
     }
 
     /**
@@ -35,7 +43,11 @@ public class ErrorLog {
      */
     public void writeError(String log, int line,String message) {
         Log.addError();
-        db.insertError(log, "INSERT INTO error_log (logfile,line,message) VALUES ('" + log + "','" + line + "','" + checkMessage(message) + "');");
+        try {
+            db.insertError(log, "INSERT INTO error_log (logfile,line,message) VALUES ('" + log + "','" + line + "','" + checkMessage(message) + "');");
+        } catch (SQLException ex){
+            System.out.println("MAJOR ALERT! The error logger has not been able to make an entry in to the database.");
+        }
     }
 
     /**
@@ -43,7 +55,12 @@ public class ErrorLog {
      * @param message The error message
      */
     public void writeError(String message) {
-        db.insertError("No log", "INSERT INTO error_log (logfile,line,message) VALUES ('No log','0','" + checkMessage(message) + "');");
+        try {
+            db.insertError("No log", "INSERT INTO error_log (logfile,line,message) VALUES ('No log','0','" + checkMessage(message) + "');");
+         } catch (SQLException ex){
+            System.out.println("MAJOR ALERT! The error logger has not been able to make an entry in to the database.");
+         }
+
     }
 
     /**

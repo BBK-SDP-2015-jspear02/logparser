@@ -17,8 +17,10 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * Any errors in an individual log file should be thrown back here, where they are entered into the logger.
  */
 public class RunIt {
-
-    public static final String basePath = "C:\\Users\\John\\Documents\\00_UNI\\2014-15\\project\\logparser\\";
+    private static final String dbURL = "jdbc:mysql://localhost/statistics";
+    private static final String dbUsername = "root";
+    private static final String dbPassword = "groovy";
+    private static final String basePath = "C:\\Users\\John\\Documents\\00_UNI\\2014-15\\project\\logparser\\";
     public static final String gzmLogs = basePath + "logs_gzm"; //location of unprocessed, compressed log files
     public static final String unprocessedLogs = basePath +"logs_unprocessed\\"; //location of unprocessed, decompressed log files
     public static final String processedLogs = basePath + "logs_processed\\"; //location to move processed log files
@@ -32,7 +34,7 @@ public class RunIt {
      * @param args Not used in this case
      */
     public static void main(String[] args) {
-        db = Database.getInstance();
+        db = Database.getInstance(dbURL,dbUsername,dbPassword);
         logger = ErrorLog.getInstance(db);
         //Get the list of log types from the database
         ResultSet rsLogTypes = db.select("SELECT * FROM log_types;");
@@ -58,7 +60,8 @@ public class RunIt {
                 rsProcessed.beforeFirst();
 
                 //Decompress log file, and place it in the unprocessed logs folder
-                DeCompress.unzip(log.toString(),log.toString().replace(gzmLogs,unprocessedLogs));
+                DeCompress inflate = new DeGZ();
+                inflate.unzip(log.toString(), log.toString().replace(gzmLogs, unprocessedLogs));
                 //Now process the log file
                 LogFactory.makeLog(log.getName(), rsLogTypes, rsSplitters, rsLive, db);
 

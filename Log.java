@@ -1,17 +1,12 @@
 package code;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * This is the main Log file format. Other, more specific log file formats inherit from this but much of the processing of the log takes place here.
@@ -28,12 +23,12 @@ public abstract class  Log {
     protected List<String> stringLines;
     protected static int lineCount = 0;
     protected static int errorCount = 0;
-    public Log(String logname,String logType,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db) throws SQLException,IOException,ParseException,Exception{
+    public Log(String logname,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db) throws Exception{
         this.logName = logname;
-        this.logType = logType;
         this.liveFix = liveFix;
         this.db = db;
         this.logSplitters = logSplitters;
+        this.logType = logDetails.getString("log_type");;
         this.cpcode = logDetails.getInt("cpcode");
         this.domain = logDetails.getString("domain");
         this.cdn = logDetails.getString("cdn");
@@ -66,7 +61,7 @@ public abstract class  Log {
     protected void readLog() throws Exception{
         lineCount = 0;
         errorCount = 0;
-        stringLines = LogReader.OpenReader(logName);
+        stringLines = TextReader.OpenReader(logName);
          //Convert the strings into objects of type logline after checking that they aren't header lines
         this.logLines = stringLines.stream().
                 filter(x -> (!(isHeader(x)))) // Make sure it is not a header line
@@ -99,7 +94,7 @@ public abstract class  Log {
      * It generates the sql by reading in each log lines outputs data structure
      * @param line The actual log line which is being entered into the database
      */
-    protected void insertToDB(LogLine line) {
+    protected void insertToDB(LogLine line) throws SQLException{
         //Add the fields that are determined by the log file rather than the log line
         addLogFields(line.getOutputs());
         String sql = "INSERT INTO logdata_temp (";
@@ -120,7 +115,7 @@ public abstract class  Log {
      * Each logline has now been enter into the temporary database. If there are no errors then it should continue with the process of finalizing the log.
      * It will run geographic lookups on the ip address, move the data into the main logdata table and then generate summary data
      */
-    protected void finalizeLog() {
+    protected void finalizeLog() throws SQLException{
         if (Log.errorCount == 0) {
             System.out.println("START: finalize log queries");
             Set<String> uniqueDates = new HashSet<String>();

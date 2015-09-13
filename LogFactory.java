@@ -38,7 +38,7 @@ public class LogFactory {
         if (!logFound) {
             throw new IllegalArgumentException("This cpcode " + cpcode + " is not recorded in the log_types database.");
         } else {
-            return (Log) Class.forName("code." + rsLogTypes.getString("log_type")).getConstructor(String.class,String.class,ResultSet.class, ResultSet.class, ResultSet.class,Database.class).newInstance(logname,rsLogTypes.getString("log_type"), rsLogTypes,rsLogSplitters,fixLive,db);
+            return (Log) Class.forName("code." + rsLogTypes.getString("log_type")).getConstructor(String.class,ResultSet.class, ResultSet.class, ResultSet.class,Database.class).newInstance(logname, rsLogTypes,rsLogSplitters,fixLive,db);
         }
 
     }
