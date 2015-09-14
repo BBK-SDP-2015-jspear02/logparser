@@ -1,8 +1,5 @@
 package code;
-import java.io.IOException;
-import java.io.FileReader;
-import java.io.BufferedReader;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,15 +17,15 @@ public class TextReader implements LogReader{
      * @return List of log lines as text
      * @throws IOException If there is an error when attempting to read the file
      */
-    public List<String> OpenReader(String logname) throws IOException {
-        FileReader reader = new FileReader(fileLocation + logname );
+    public List<String> OpenReader(String logname) throws IOException{
+        try {
+            FileReader reader = new FileReader(fileLocation + logname );
+            BufferedReader fileText = new BufferedReader(reader);
+                return fileText.lines()
+                        .collect(Collectors.toList());
 
-        try (BufferedReader fileText = new BufferedReader(reader)) {
-            return fileText.lines()
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException("That file does not exist");
         }
     }
-
 }
