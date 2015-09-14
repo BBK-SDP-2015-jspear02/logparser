@@ -7,6 +7,7 @@ public class Database {
     private Connection conn;
     private String fields;
     private String values;
+    private boolean debug = false;
     private int insertCount;
     private static Database db;
     private Database(String url, String username, String password) {
@@ -56,7 +57,7 @@ public class Database {
     public void insert(Log log,String sql) throws SQLException{
 
             Statement stmt = conn.createStatement();
-            System.out.println(sql);
+            if (debug) System.out.println(sql);
             stmt.executeUpdate(sql);
 
     }
@@ -68,7 +69,7 @@ public class Database {
     public void insertError(String log,String sql) throws SQLException{
 
             Statement stmt = conn.createStatement();
-           // System.out.println(sql);
+             if (debug) System.out.println(sql);
             stmt.executeUpdate(sql);
 
     }
@@ -81,7 +82,7 @@ public class Database {
      * @param logLine The line of the log file that is being processed.
      */
     public void bulkInsert(Log log, String fields, String values, int logLine) throws SQLException{
-        if ((insertCount == 10)|| (logLine == Log.getLine())) {
+        if ((insertCount == 500)|| (logLine == Log.getLine())) {
             //Insert every 200 rows or when the log file is finished.
             this.values += values;
 

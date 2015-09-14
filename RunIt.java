@@ -21,7 +21,7 @@ public class RunIt {
     private static final String dbUsername = "root";
     private static final String dbPassword = "groovy";
     private static final String basePath = "C:\\Users\\John\\Documents\\00_UNI\\2014-15\\project\\logparser\\";
-    public static final String gzmLogs = basePath + "logs_gzm"; //location of unprocessed, compressed log files
+    public static final String gzmLogs = basePath + "logs_gzm\\"; //location of unprocessed, compressed log files
     public static final String unprocessedLogs = basePath +"logs_unprocessed\\"; //location of unprocessed, decompressed log files
     public static final String processedLogs = basePath + "logs_processed\\"; //location to move processed log files
     private static Database db;
@@ -62,16 +62,20 @@ public class RunIt {
                 //Decompress log file, and place it in the unprocessed logs folder
                 DeCompress inflate = new DeGZ();
                 inflate.unzip(log.toString(), log.toString().replace(gzmLogs, unprocessedLogs));
+                //Create a new instance of log reader. In this case it is hard coded to TextReader
+                LogReader reader = new TextReader(unprocessedLogs);
                 //Now process the log file
-                LogFactory.makeLog(log.getName(), rsLogTypes, rsSplitters, rsLive, db);
+                LogFactory.makeLog(log.getName(), rsLogTypes, rsSplitters, rsLive, db, reader, logger);
 
                 //Now move the log file from unprocessed to processed
                 try {
                     System.out.println("START: move log file to processed");
                     //Move the compressed file to the processed logs to keep as archive
-                    Files.move(Paths.get(RunIt.gzmLogs + log.getName()), Paths.get(RunIt.processedLogs + log.getName()), REPLACE_EXISTING);
+                    System.out.println(gzmLogs + log.getName());
+                    System.out.println(processedLogs + log.getName());
+                    Files.move(Paths.get(gzmLogs + log.getName()), Paths.get(processedLogs + log.getName()), REPLACE_EXISTING);
                     //Delete the uncompressed file.
-                    Files.delete(Paths.get(RunIt.unprocessedLogs + log.getName()));
+                    Files.delete(Paths.get(unprocessedLogs + log.getName()));
                     System.out.println("COMPLETE: move log file to processed");
                 } catch (Exception ex) {
                     RunIt.logger.writeError(log.getName(),0,ex.getMessage());

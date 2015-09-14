@@ -16,19 +16,19 @@ public class LogLineFactory {
      * @param logLineType Defines which type of logline object this shoudl be.
      * @return The logline object
      */
-    public static LogLine makeLogLine(Log log,String logline, String breaker, ResultSet splitters, String logLineType)  {
+    public static LogLine makeLogLine(Log log,String logline, String breaker, ResultSet splitters, String logLineType, ErrorLog logger)  {
         try {
             return (LogLine) Class.forName("code." + logLineType + "Line").getConstructor(Log.class,String.class, String.class, ResultSet.class).newInstance(log,logline, breaker, splitters);
         }catch (ClassNotFoundException ex) {
-            RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
+            logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
         } catch (IllegalAccessException ex) {
-            RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
+            logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
         } catch (InstantiationException ex) {
-            RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
+            logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
         } catch (NoSuchMethodException ex) {
-            RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
+            logger.writeError(log.getName(), Log.getLine(), ex.getMessage());
         } catch (InvocationTargetException ex) {
-            RunIt.logger.writeError(log.getName(), Log.getLine(), ex.getCause().getMessage());
+            logger.writeError(log.getName(), Log.getLine(), ex.getCause().getMessage());
         }
 
         //If it fails (it never should) - just attempt to process it as a normal logline

@@ -18,15 +18,19 @@ public abstract class  Log {
     protected int cpcode;
     protected Database db;
     protected ResultSet liveFix;
+    protected ErrorLog logger;
     protected String logName,logType, domain, cdn, deliveryType, client, breaker;
     protected List<? extends LogLine> logLines;
     protected List<String> stringLines;
+    protected LogReader reader;
     protected static int lineCount = 0;
     protected static int errorCount = 0;
-    public Log(String logname,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db) throws Exception{
+    public Log(String logname,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db, LogReader reader, ErrorLog logger) throws Exception{
         this.logName = logname;
         this.liveFix = liveFix;
         this.db = db;
+        this.reader = reader;
+        this.logger = logger;
         this.logSplitters = logSplitters;
         this.logType = logDetails.getString("log_type");;
         this.cpcode = logDetails.getInt("cpcode");
@@ -36,7 +40,10 @@ public abstract class  Log {
         this.client = logDetails.getString("client");
         //Defines what the line items are split by - usually tab but sometimes space.
         this.breaker = logDetails.getString("split_characters");
-        System.out.println("START: Log read....");
+        //As a belt and braces approach we will truncate the temporary log table here
+        db.operate(this, "TRUNCATE TABLE logdata_temp");
+
+
         readLog();
     }
 
@@ -59,16 +66,17 @@ public abstract class  Log {
      * @throws Exception A general exception is used as we are keen to stop the processing of the file.
      */
     protected void readLog() throws Exception{
+        System.out.println("START: Read log....");
         lineCount = 0;
         errorCount = 0;
-        stringLines = TextReader.OpenReader(logName);
+        stringLines = reader.OpenReader(logName);
          //Convert the strings into objects of type logline after checking that they aren't header lines
         this.logLines = stringLines.stream().
                 filter(x -> (!(isHeader(x)))) // Make sure it is not a header line
-                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, logSplitters, logType)) // Create the log line object
+                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, logSplitters, logType,logger)) // Create the log line object
                         .collect(Collectors.toList());
 
-        System.out.println("COMPLETE: Log read....");
+        System.out.println("COMPLETE: Read log....");
 
     }
 
@@ -110,39 +118,60 @@ public abstract class  Log {
 
         db.bulkInsert(this, fields, inputs, Integer.parseInt(line.getOutputs().get("log_line")));
     }
+    /**
+     * This takes care of entering each log line object from the logLines list in to the temporary table
+     * Once finished it finalizes the log file.
+     */
+    protected void insertAllLinesToTempDB() throws SQLException{
+        System.out.println("START: Insert lines to temp table.");
 
+        for(LogLine line: logLines){
+            insertToDB(line);
+        }
+        System.out.println("COMPLETE: Insert lines to temp table.");
+        //Now finalize the log
+        finalizeLog();
+    }
     /**
      * Each logline has now been enter into the temporary database. If there are no errors then it should continue with the process of finalizing the log.
      * It will run geographic lookups on the ip address, move the data into the main logdata table and then generate summary data
      */
     protected void finalizeLog() throws SQLException{
         if (Log.errorCount == 0) {
-            System.out.println("START: finalize log queries");
             Set<String> uniqueDates = new HashSet<String>();
             //Look up the unique dates in the log file. This is needed for creating efficient summary table queries.
             logLines.stream().forEach(line -> uniqueDates.add(line.getOutputs().get("date")));
+
+            System.out.println("START: GeoQuery update.....");
             //Do geo lookup to put the country information in there
             db.operate(this, "update statistics.logdata_temp l inner join ip2location.ip_country c ON MBRCONTAINS(c.ip_poly, POINTFROMWKB(POINT(l.ip_number, 0))) SET l.country = c.country_name;");
+            System.out.println("COMPLETE: GeoQuery update.");
+
+            System.out.println("START: Move temp table to logdata");
             //Insert into main logdata
             db.operate(this, "INSERT INTO logdata SELECT * from logdata_temp;");
+            System.out.println("COMPLETE: Move temp table to logdata");
+
+            System.out.println("START: Build summary path");
             //Delete from the days from summary path that contain this domains and dates
             db.operate(this, "DELETE FROM summary_path WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
             //Delete from the days from summary path that contain this domains and dates
             db.operate(this, "INSERT INTO summary_path(cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,duration,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country, AVG(duration), sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata  WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ") group by cdn,cpcode,domain,client,directories,dir1,dir2,url,path,file_ref,file_name,file_type,delivery_method,format,country,date,type,gghostid,ggcampaignid");
+            System.out.println("COMPLETE: Build summary path");
+
+            System.out.println("START: Build summary client");
             //Delete from the days from summary client that contain this domains and dates
             db.operate(this, "DELETE FROM summary_client WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")");
             //Delete from the days from summary path that contain this domains and dates
             db.operate(this, "INSERT INTO summary_client(cdn,cpcode,domain,client,dir1,country,device,throughput,hits,unique_viewers,date,type,gghostid,ggcampaignid) SELECT cdn,cpcode,domain,client,dir1,country,device, sum(throughput), count(*), count(DISTINCT(ip_address)), date, type,gghostid,ggcampaignid from logdata   WHERE cpcode = " + this.cpcode + " AND ("  + getUniqueDates(uniqueDates) + ")group by cdn,cpcode,domain,client,dir1,country,date,type,gghostid,ggcampaignid ");
+            System.out.println("COMPLETE: Build summary client");
 
+            System.out.println("START: Insert log file into processed logs");
             //Now record that the log has been successfully processed
             db.insert(this,"INSERT into processed_logs (logname, line_count) VALUES ('" + this.getName() + "'," + Log.getLine() + ")");
-            System.out.println("END: finalize log queries");
+            System.out.println("COMPLETE: Insert log file into processed logs");
 
         }
-
-        // truncate temporary table
-        db.operate(this, "TRUNCATE TABLE logdata_temp");
-
     }
     /**
      * When generating the SQL query to insert into the log table we need to check whether the items are numbers of strings

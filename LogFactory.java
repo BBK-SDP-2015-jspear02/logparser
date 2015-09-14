@@ -22,7 +22,7 @@ public class LogFactory {
      * @throws InvocationTargetException
      * @throws SQLException A SQL error has occurred
      */
-    public static Log makeLog(String logname, ResultSet rsLogTypes, ResultSet rsLogSplitters, ResultSet fixLive, Database db) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException,SQLException {
+    public static Log makeLog(String logname, ResultSet rsLogTypes, ResultSet rsLogSplitters, ResultSet fixLive, Database db, LogReader reader, ErrorLog logger) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException,SQLException {
         //Split the logname into an array and get the first item (which is the cpcode of the log)
         int cpcode = Integer.parseInt(logname.split("_")[0]);
         Boolean logFound = false;
@@ -38,7 +38,7 @@ public class LogFactory {
         if (!logFound) {
             throw new IllegalArgumentException("This cpcode " + cpcode + " is not recorded in the log_types database.");
         } else {
-            return (Log) Class.forName("code." + rsLogTypes.getString("log_type")).getConstructor(String.class,ResultSet.class, ResultSet.class, ResultSet.class,Database.class).newInstance(logname, rsLogTypes,rsLogSplitters,fixLive,db);
+            return (Log) Class.forName("code." + rsLogTypes.getString("log_type")).getConstructor(String.class,ResultSet.class, ResultSet.class, ResultSet.class,Database.class,LogReader.class,ErrorLog.class).newInstance(logname, rsLogTypes,rsLogSplitters,fixLive,db,reader,logger);
         }
 
     }

@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
  */
 public class LogHDN extends Log{
     private double tput;
-    public LogHDN(String logname, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix,Database db) throws Exception{
-        super(logname,logDetails, logSplitters,liveFix,db);
+    public LogHDN(String logname, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix,Database db, LogReader reader, ErrorLog logger) throws Exception{
+        super(logname,logDetails, logSplitters,liveFix,db, reader, logger);
         tput = 0;
     }
 
@@ -23,20 +23,19 @@ public class LogHDN extends Log{
      */
     @Override
     protected void readLog() throws Exception{
+        System.out.println("START: Read log....");
         lineCount = 0;
         errorCount = 0;
-        stringLines = TextReader.OpenReader(logName);
+        stringLines = reader.OpenReader(logName);
         //Convert the strings into objects of type logline after checking that they aren't header lines
-        try {
+
             this.logLines = stringLines.stream().
                     filter(x -> (!(isHeader(x)))) // check it isn't a header line
-                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, logSplitters, logType)) // create the object
+                    .map(y -> LogLineFactory.makeLogLine(this, y, breaker, logSplitters, logType, logger)) // create the object
                     .filter(line -> (playlistCheck(line.getOutputs().get("file_ref")) || crossDomainCheck(line.getOutputs().get("file_ref")))) //Check it is a playlist or crossdomain request
                     .collect(Collectors.toList());
 
-        } catch (Exception ex) {
-            RunIt.logger.writeError(this,getLine(),ex.getMessage());
-        }
+        System.out.println("COMPLETE: READ log....");
         //Now analyse it!
         analyzeLog();
     }
@@ -47,7 +46,7 @@ public class LogHDN extends Log{
      */
     protected void analyzeLog() throws Exception{
         //All of the playlist lines have been created. Now we need to go through the segments again, adding them to the right playlist.
-
+        System.out.println("START: Analyze log. This can take several minutes.");
         List<LogHDNLine> masterHits = this.logLines.stream()
                     .filter(x -> playlistCheck(x.getOutputs().get("file_ref"))) //First get all the master playlists hits by checking that they are called master.m3u8 or manifest.f4m
                             .map(x -> (LogHDNLine) x) // Cast them to LogHDNLine
@@ -71,7 +70,7 @@ public class LogHDN extends Log{
                 //Don't read the header lines
                 if (!isHeader(line)) {
                     // Create a new temporary log line which exists for this loop
-                    LogLine segmentLine = LogLineFactory.makeLogLine(this,line, breaker,logSplitters,logType);
+                    LogLine segmentLine = LogLineFactory.makeLogLine(this,line, breaker,logSplitters,logType, logger);
                     //Make sure that it is a segment rather than a playlist or a crossdomain file
                     if (!(playlistCheck(segmentLine.getOutputs().get("file_ref")) || crossDomainCheck(segmentLine.getOutputs().get("file_ref")))) {
                         //A combination of user agent, ipaddress and path should make a unique viewer for this segment
@@ -127,14 +126,12 @@ public class LogHDN extends Log{
         for (LogLine hit : finalHits) {
             hit = fixLive(hit);
         }
+        System.out.println("COMPLETE: Analyze log.");
         //re-assign back to loglines
         logLines = finalHits;
         //Insert to the tempporary database table
-        for(LogLine line: logLines){
-            insertToDB(line);
-        }
+        insertAllLinesToTempDB();
 
-        finalizeLog();
     }
 
     /**
@@ -144,7 +141,6 @@ public class LogHDN extends Log{
     protected LogLine fixLive(LogLine line) throws SQLException{
 
                 while (liveFix.next()) {
-                    try {
                        // System.out.println(line.getOutputs().get("stream") + "   =   " + liveFix.getString("event") + "_1@" + liveFix.getString("stream"));
                         if ((cpcode == liveFix.getInt("cpcode")) && (line.getOutputs().get("stream").equals(liveFix.getString("event") + "_1@" + liveFix.getString("stream")))) {
 
@@ -154,13 +150,9 @@ public class LogHDN extends Log{
                             Url.directorySplit(line.getOutputs().get("path"), line.getOutputs());
                             break;
                         }
-                    } catch (Exception ex) {
-                        RunIt.logger.writeError(this,getLine(),ex.getMessage());
-                    }
                 }
                 //Reset the result set
                 liveFix.beforeFirst();
-
 
         return line;
 
