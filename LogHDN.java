@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
  */
 public class LogHDN extends Log{
     private double tput;
-    public LogHDN(String logname, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix,Database db, LogReader reader, ErrorLog logger) throws Exception{
-        super(logname,logDetails, logSplitters,liveFix,db, reader, logger);
+    public LogHDN(String logname, ResultSet logDetails, ResultSet logSplitters,ResultSet liveFix,Database db, LogReader reader, ErrorLog logger, Boolean debug) throws Exception{
+        super(logname,logDetails, logSplitters,liveFix,db, reader, logger, debug);
         tput = 0;
     }
 

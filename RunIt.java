@@ -65,7 +65,7 @@ public class RunIt {
                 //Create a new instance of log reader. In this case it is hard coded to TextReader
                 LogReader reader = new TextReader(unprocessedLogs);
                 //Now process the log file
-                LogFactory.makeLog(log.getName(), rsLogTypes, rsSplitters, rsLive, db, reader, logger);
+                LogFactory.makeLog(log.getName(), rsLogTypes, rsSplitters, rsLive, db, reader, logger,false);
 
                 //Now move the log file from unprocessed to processed
                 try {

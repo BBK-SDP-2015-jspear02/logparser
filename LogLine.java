@@ -1,11 +1,8 @@
 package code;
 
 import nl.bitwalker.useragentutils.UserAgent;
-import org.apache.commons.lang.StringEscapeUtils;
 
-import java.net.URISyntaxException;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 /**
  * This is the main Log line class. Any specific types of log line can inherit/override this one. It has a data structure called outputs which is a map with a string key and value pair containing the information about each log line.
@@ -13,7 +10,7 @@ import java.util.*;
 public class LogLine {
     protected String logline;
     protected Log log;
-    protected IP ip;
+    protected IP IPv4;
     protected int cpcode;
     protected Map<String,String> outputs;
     protected List<String> lineItems;
@@ -114,8 +111,8 @@ public class LogLine {
      * This handles the generation of the ip number and assigning it to the outputs data structure.
      */
     private void ipSplit() {
-        ip = new IP(outputs.get("ip_address"));
-        outputs.put("ip_number",Long.toString(ip.getIpNumber()));
+        IPv4 = new IPv4(outputs.get("ip_address"));
+        outputs.put("ip_number",Long.toString(IPv4.getIpNumber()));
     }
     /**
      * This handles adding a segment back in to a master download

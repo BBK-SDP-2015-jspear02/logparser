@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * This class handles the i/o process of reading in the log files
+ * This class handles the i/o process of reading in the text log files
  */
 public class TextReader implements LogReader{
     private String fileLocation;

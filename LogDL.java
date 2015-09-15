@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
  * This is the Download Log format, it is a child of the Log class.
  */
 public class LogDL extends Log{
-    public LogDL(String logname, ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db, LogReader reader, ErrorLog logger) throws Exception {
-        super(logname,logDetails, logSplitters, liveFix, db, reader, logger);
+    public LogDL(String logname, ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db, LogReader reader, ErrorLog logger, Boolean debug) throws Exception {
+        super(logname,logDetails, logSplitters, liveFix, db, reader, logger,debug);
         analyseLog();
     }
 

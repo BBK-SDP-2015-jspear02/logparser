@@ -1,7 +1,7 @@
 package code;
 
 
-import org.apache.commons.lang.StringEscapeUtils;
+import java.net.URLDecoder;
 import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,10 +22,10 @@ public class Url {
      * @throws SQLException If there is an error when looping through the recordset
      * @throws URISyntaxException If there is an error when processing the querystring
      */
-    private static String[] urlSplitBasic(Map<String,String> outputs,ResultSet splitters) throws SQLException, URISyntaxException{
+    public static String[] urlSplitBasic(Map<String,String> outputs,ResultSet splitters) throws SQLException, URISyntaxException, IllegalArgumentException{
 
         //First clean up the url of any unusual characters
-        String urlNoHtml = StringEscapeUtils.unescapeHtml(outputs.get("full_url"));
+        String urlNoHtml = URLDecoder.decode(outputs.get("full_url"));
         //Then break the url up into querystring and stem
         String[] urlArr = urlNoHtml.split("\\?");
 
@@ -48,6 +48,9 @@ public class Url {
                     rtnArray[1] = splitters.getString("client");
                     break;
                 }
+            }
+            if (rtnArray[0] == null) {
+                throw new IllegalArgumentException("The url does not having a valid splitter");
             }
             //Move back to the front of the recordset
             splitters.beforeFirst();

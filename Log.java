@@ -16,6 +16,7 @@ public abstract class  Log {
     protected ResultSet logSplitters;
     //Each log has a unique name, cpcode, domain and logtype
     protected int cpcode;
+    protected boolean debug;
     protected Database db;
     protected ResultSet liveFix;
     protected ErrorLog logger;
@@ -25,12 +26,13 @@ public abstract class  Log {
     protected LogReader reader;
     protected static int lineCount = 0;
     protected static int errorCount = 0;
-    public Log(String logname,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db, LogReader reader, ErrorLog logger) throws Exception{
+    public Log(String logname,ResultSet logDetails, ResultSet logSplitters, ResultSet liveFix, Database db, LogReader reader, ErrorLog logger, Boolean debug) throws Exception{
         this.logName = logname;
         this.liveFix = liveFix;
         this.db = db;
         this.reader = reader;
         this.logger = logger;
+        this.debug = debug;
         this.logSplitters = logSplitters;
         this.logType = logDetails.getString("log_type");;
         this.cpcode = logDetails.getInt("cpcode");
@@ -121,23 +123,26 @@ public abstract class  Log {
     /**
      * This takes care of entering each log line object from the logLines list in to the temporary table
      * Once finished it finalizes the log file.
+     * IMPORTANT NOTE: If the debug boolean is set to true then no data will be entered in to the database. This is to allow for unit testing.
      */
     protected void insertAllLinesToTempDB() throws SQLException{
-        System.out.println("START: Insert lines to temp table.");
+       if (!debug) {
+           System.out.println("START: Insert lines to temp table.");
 
-        for(LogLine line: logLines){
-            insertToDB(line);
-        }
-        System.out.println("COMPLETE: Insert lines to temp table.");
-        //Now finalize the log
-        finalizeLog();
+           for (LogLine line : logLines) {
+               insertToDB(line);
+           }
+           System.out.println("COMPLETE: Insert lines to temp table.");
+           //Now finalize the log
+           finalizeLog();
+       }
     }
     /**
      * Each logline has now been enter into the temporary database. If there are no errors then it should continue with the process of finalizing the log.
      * It will run geographic lookups on the ip address, move the data into the main logdata table and then generate summary data
      */
     protected void finalizeLog() throws SQLException{
-        if (Log.errorCount == 0) {
+        if (Log.errorCount == 0)  {
             Set<String> uniqueDates = new HashSet<String>();
             //Look up the unique dates in the log file. This is needed for creating efficient summary table queries.
             logLines.stream().forEach(line -> uniqueDates.add(line.getOutputs().get("date")));
