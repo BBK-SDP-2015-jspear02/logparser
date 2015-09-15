@@ -103,6 +103,7 @@ public abstract class  Log {
      * After the log file has been processed, this inputs the log line into the database.
      * It generates the sql by reading in each log lines outputs data structure
      * @param line The actual log line which is being entered into the database
+     * @throws SQLException If an error occurs with the query
      */
     protected void insertToDB(LogLine line) throws SQLException{
         //Add the fields that are determined by the log file rather than the log line
@@ -124,6 +125,7 @@ public abstract class  Log {
      * This takes care of entering each log line object from the logLines list in to the temporary table
      * Once finished it finalizes the log file.
      * IMPORTANT NOTE: If the debug boolean is set to true then no data will be entered in to the database. This is to allow for unit testing.
+     * @throws SQLException If an error occurs with the query
      */
     protected void insertAllLinesToTempDB() throws SQLException{
        if (!debug) {
@@ -140,6 +142,7 @@ public abstract class  Log {
     /**
      * Each logline has now been enter into the temporary database. If there are no errors then it should continue with the process of finalizing the log.
      * It will run geographic lookups on the ip address, move the data into the main logdata table and then generate summary data
+     * @throws SQLException If an error has occurred with the database
      */
     protected void finalizeLog() throws SQLException{
         if (Log.errorCount == 0)  {
@@ -182,6 +185,7 @@ public abstract class  Log {
      * When generating the SQL query to insert into the log table we need to check whether the items are numbers of strings
      * @param key the name of the field
      * @param item the value of the field
+     * @return The SQL ready string
      */
     public static String fieldType(String key,Object item) {
 
@@ -202,6 +206,7 @@ public abstract class  Log {
     /**
      * Checks whether the logline is a header line or not. We won't process the line if it is a header.
      * @param line The actual log line which is being entered into the database
+     * @return A boolean representing whether it is a header line or not
      */
     protected boolean isHeader(String line) {
         String[] lineSplit = line.split("\\s+");

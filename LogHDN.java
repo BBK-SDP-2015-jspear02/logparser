@@ -137,6 +137,8 @@ public class LogHDN extends Log{
     /**
      * This handles attributing data to a client and directory. It matches up lines with the fix_live table and then re-processes part of the line so that it has the correct client/ directory information.
      * @param line The log line that is currently being checked to see if it can be attributed to a client
+     * @return The mutated line object with client data attributed
+     * @throws SQLException Handles any exceptions which are passed up the chain when possible.
      * */
     protected LogLine fixLive(LogLine line) throws SQLException{
 

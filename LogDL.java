@@ -21,6 +21,7 @@ public class LogDL extends Log{
     }
     /**
      * The download logs also feature partial requests so some form of analysis is necessary. This takes care of the analysis, attributing partial hits to full hits.
+     * @throws SQLException If an error has occurred with the database
      */
     protected void analyseLog() throws SQLException{
         System.out.println("START: Analyze log....");

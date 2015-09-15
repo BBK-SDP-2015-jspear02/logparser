@@ -36,6 +36,7 @@ public class Database {
 
     /**
      * Any select queries are handled here.
+     * @param sql The sql select statement
      * @return rs - the result set containing the data that has been queried.
      */
     public ResultSet select(String sql) {
@@ -53,6 +54,7 @@ public class Database {
      * Any select queries are handled here.
      * @param log The log file that is being read at the time of this insert
      * @param sql The actual sql statement which is being run on the insert
+     * @throws SQLException If an error occurs with the query
      */
     public void insert(Log log,String sql) throws SQLException{
 
@@ -65,6 +67,7 @@ public class Database {
      * Any select queries are handled here.
      * @param log The name of the file that is being read at the time of this error
      * @param sql The actual sql statement which is being run on the insert
+     * @throws SQLException If an error occurs with the query
      */
     public void insertError(String log,String sql) throws SQLException{
 
@@ -80,6 +83,7 @@ public class Database {
      * @param fields The fields to be inserted to part of the sql
      * @param values The values to be inserted part of the sql statement
      * @param logLine The line of the log file that is being processed.
+     * @throws SQLException If an error occurs with the query
      */
     public void bulkInsert(Log log, String fields, String values, int logLine) throws SQLException{
         if ((insertCount == 500)|| (logLine == Log.getLine())) {
@@ -102,6 +106,7 @@ public class Database {
      * When it reaches x rows or the end of the log file it actually runs the query.
      * @param log The log file that is being read at the time of this insert
      * @param sql The sql statement that is being executed
+     * @throws SQLException If an error occurs with the query
      */
     public void operate(Log log,String sql) throws SQLException{
             Statement stmt = conn.createStatement();
@@ -112,6 +117,7 @@ public class Database {
      * Used to run operations such as truncation, updates and moving data from one table to another when not using a log file
      * When it reaches x rows or the end of the log file it actually runs the query.
      * @param sql The sql statement that is being executed
+     * @throws SQLException If an error occurs with the query
      */
     public void operate(String sql) throws SQLException{
             Statement stmt = conn.createStatement();

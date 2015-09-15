@@ -14,6 +14,7 @@ public class LogLineFactory {
      * @param breaker the text that should be used to break one long line into an array of attributes
      * @param splitters The recordset which defines what url splitters to use for this cpcode
      * @param logLineType Defines which type of logline object this shoudl be.
+     * @param logger The error logger
      * @return The logline object
      */
     public static LogLine makeLogLine(Log log,String logline, String breaker, ResultSet splitters, String logLineType, ErrorLog logger)  {
